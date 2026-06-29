@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fh_social_db
+    environment:
+      POSTGRES_DB: fh_social
+      POSTGRES_USER: fh_social
+      POSTGRES_PASSWORD: fh_social
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: fh_social_backend
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/fh_social
+      SPRING_DATASOURCE_USERNAME: fh_social
+      SPRING_DATASOURCE_PASSWORD: fh_social
+    ports:
+      - "3000:3000"
+    volumes:
+    - file-storage:/app/uploads
+
+volumes:
+  postgres_data:
+  file-storage:
