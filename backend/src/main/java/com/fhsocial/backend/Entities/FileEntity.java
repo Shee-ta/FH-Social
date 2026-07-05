@@ -9,6 +9,7 @@ import org.springframework.data.domain.Persistable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
@@ -32,6 +33,9 @@ public class FileEntity implements Persistable<UUID> {
 
     @Column(nullable = false)
     private long size;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String preprocessedContent;
     
     @CreationTimestamp
     private Instant createdAt;
@@ -84,6 +88,14 @@ public class FileEntity implements Persistable<UUID> {
         this.size = size;
     }
 
+    public String getPreprocessedContent() {
+        return preprocessedContent;
+    }
+
+    public void setPreprocessedContent(String preprocessedContent) {
+        this.preprocessedContent = preprocessedContent;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -105,5 +117,13 @@ public class FileEntity implements Persistable<UUID> {
     @PostPersist
     private void markNotNew() {
         this.isNew = false;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("File name: " + originalFileName);
+        stringBuilder.append("Content: " + preprocessedContent);
+        return stringBuilder.toString();
     }
 }

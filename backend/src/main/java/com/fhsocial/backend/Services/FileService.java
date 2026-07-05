@@ -20,10 +20,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fhsocial.backend.DTO.FileDTO;
+import com.fhsocial.backend.DTO.ProcessedFileDTO;
 import com.fhsocial.backend.Entities.EventEntity;
 import com.fhsocial.backend.Entities.FileEntity;
 import com.fhsocial.backend.Repositories.EventRepository;
 import com.fhsocial.backend.Repositories.FileRepository;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +38,10 @@ public class FileService {
     private static final int FILE_TIME_TO_LIVE = 3600;
 
     private FileRepository fileRepository;
+    private FileProcessorService fileProcessorService;
     private EventRepository eventRepository;
+    private ObjectMapper objectMapper;
+
     private Logger logger = LoggerFactory.getLogger(FileRepository.class);
 
     private FileDTO toDto(FileEntity fileEntity) {
@@ -90,9 +96,11 @@ public class FileService {
         return true;
     }
 
-    public FileService(FileRepository fileRepository, EventRepository eventRepository) {
+    public FileService(FileRepository fileRepository, FileProcessorService fileProcessorService, EventRepository eventRepository, ObjectMapper objectMapper) {
         this.fileRepository = fileRepository;
+        this.fileProcessorService = fileProcessorService; 
         this.eventRepository = eventRepository;
+        this.objectMapper = objectMapper;
     }
     
     public ResponseEntity<Map<String, String>> uploadFile(MultipartFile file, UUID eventId, UUID authenticatedUserId) {
@@ -116,6 +124,15 @@ public class FileService {
 
         boolean success = saveFile(file, fileDTO.savedFileName());
         if (success) {
+
+            String processedFileStr;
+            try {
+                ProcessedFileDTO processed = fileProcessorService.process(file);
+                processedFileStr = objectMapper.writeValueAsString(processed);
+            } catch (Exception e) {
+                processedFileStr = "";
+            }
+            fileEntity.setPreprocessedContent(processedFileStr);
             fileRepository.save(fileEntity);
             logger.info("Saved file with id={} for event with id={}", fileDTO.id(), fileDTO.eventId());
             return ResponseEntity.ok(Map.of("status", "saved", "fileId", fileDTO.id().toString()));

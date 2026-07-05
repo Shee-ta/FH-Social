@@ -14,7 +14,7 @@ import com.fhsocial.backend.DTO.CommentDTO;
 import com.fhsocial.backend.Entities.CommentEntity;
 import com.fhsocial.backend.Repositories.CommentRepository;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import org.slf4j.LoggerFactory;
 
@@ -60,12 +60,12 @@ public class CommentService {
     public ResponseEntity<Map<String, String>> uploadComment(JsonNode comment, UUID authenticatedUserId) {
         try {
             CommentDTO commentDTO = new CommentDTO(
-                UUID.fromString(comment.get("id").asText()),
+                UUID.fromString(comment.get("id").asString()),
                 authenticatedUserId,
-                UUID.fromString(comment.get("eventId").asText()),
-                comment.get("content").asText(),
-                comment.get("createdAt").asText(),
-                comment.get("editedAt").asText(),
+                UUID.fromString(comment.get("eventId").asString()),
+                comment.get("content").asString(),
+                comment.get("createdAt").asString(),
+                comment.get("editedAt").asString(),
                 comment.get("deleted").asBoolean()
             );
             if(commentDTO.deleted()) {

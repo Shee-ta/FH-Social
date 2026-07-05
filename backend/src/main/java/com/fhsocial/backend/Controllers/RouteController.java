@@ -5,13 +5,14 @@ import com.fhsocial.backend.DTO.EventDTO;
 import com.fhsocial.backend.DTO.FileDTO;
 import com.fhsocial.backend.DTO.LoginRequestDTO;
 import com.fhsocial.backend.DTO.UserDTO;
+import com.fhsocial.backend.Services.AiService;
 import com.fhsocial.backend.Services.AuthService;
 import com.fhsocial.backend.Services.CommentService;
 import com.fhsocial.backend.Services.EventService;
 import com.fhsocial.backend.Services.FileService;
 import com.fhsocial.backend.Services.UserService;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,15 +41,17 @@ public class RouteController {
     private final AuthService authService;
     private final UserService userService;
     private final FileService fileService;
+    private final AiService aiService;
 
     private Logger logger = LoggerFactory.getLogger(RouteController.class);
 
-    public RouteController(EventService eventService, CommentService commentService, AuthService authService, UserService userService, FileService fileService) {
+    public RouteController(EventService eventService, CommentService commentService, AuthService authService, UserService userService, FileService fileService, AiService aiService) {
         this.eventService = eventService;
         this.commentService = commentService;
         this.authService = authService;
         this.userService = userService;
         this.fileService = fileService;
+        this.aiService = aiService;
     }
 
     // --- EVENT ENDPOINTS --- //
@@ -174,6 +177,27 @@ public class RouteController {
         UUID authenticatedUserId = UUID.fromString(principal.getName());
         UUID fileId = UUID.fromString(fileIdStr);
         return fileService.downloadFile(fileId, authenticatedUserId);
+    }
+    
+    // --- AI ENDPOINTS --- //
+    @PostMapping("/ai/generate-recommendation")
+    public ResponseEntity<Map<String, String>> generateRecommendation(
+        @RequestParam String eventIdStr,
+        Principal principal
+    ) throws IllegalArgumentException {
+        UUID authenticatedUserId = principal != null ? UUID.fromString(principal.getName()) : null;
+        UUID eventId = UUID.fromString(eventIdStr);
+        return aiService.generateRecommendation(eventId, authenticatedUserId);
+    }
+
+    @PostMapping("/ai/generate-tags")
+    public ResponseEntity<Map<String, String>> generateTags(
+        @RequestParam String eventIdStr,
+        Principal principal
+    ) throws IllegalArgumentException {
+        UUID authenticatedUserId = principal != null ? UUID.fromString(principal.getName()) : null;
+        UUID eventId = UUID.fromString(eventIdStr);
+        return aiService.generateTags(eventId, authenticatedUserId);
     }
 
     // --- AUTH ENDPOINTS --- //

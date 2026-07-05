@@ -64,6 +64,11 @@ public class EventEntity implements Persistable<UUID> {
     @Column(name = "member_id", nullable = false)
     private List<String> memberIDs;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "event_tags", joinColumns = @JoinColumn(name = "event_id"))
+    @Column(name = "tag", nullable = false)
+    private List<String> tags;
+
     @CreationTimestamp
     private Instant createdAt;
 
@@ -175,6 +180,14 @@ public class EventEntity implements Persistable<UUID> {
         this.memberIDs = memberIDs;
     }
 
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
     public boolean getDeleted() {
         return deleted;
     }
@@ -192,5 +205,19 @@ public class EventEntity implements Persistable<UUID> {
     @PostPersist
     private void markNotNew() {
         this.isNew = false;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("Title: " + title);
+        stringBuilder.append("Start Time: " + iso8601startDateTime);
+        stringBuilder.append("End Time: " + iso8601endDateTime);
+        stringBuilder.append("Description: " + description);
+        stringBuilder.append("Recommendation for learning: " + recommendation);
+        stringBuilder.append("Location: " + location);
+        stringBuilder.append("Days: " + days);
+        stringBuilder.append("Tags: " + tags);
+        return stringBuilder.toString();
     }
 }

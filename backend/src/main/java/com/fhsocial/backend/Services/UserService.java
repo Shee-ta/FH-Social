@@ -14,7 +14,7 @@ import com.fhsocial.backend.DTO.UserDTO;
 import com.fhsocial.backend.Entities.UserEntity;
 import com.fhsocial.backend.Repositories.UserRepository;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +59,7 @@ public class UserService {
         try {
             UserEntity authenticatedUserEntity = userRepository.findById(authenticatedUserId).orElseThrow(() -> new IllegalArgumentException("Authenticated user not found"));
             String authenticatedUserRole = authenticatedUserEntity.getRole();
-            UUID userID = UUID.fromString(user.get("id").asText());
+            UUID userID = UUID.fromString(user.get("id").asString());
 
             if(authenticatedUserRole.equals("student")) {
 
@@ -69,7 +69,7 @@ public class UserService {
                 }
 
                 UserEntity userEntity = userRepository.findById(userID).orElseThrow(() -> new IllegalArgumentException("User not found"));
-                userEntity.setDisplayname(user.get("displayname").asText());
+                userEntity.setDisplayname(user.get("displayname").asString());
 
                 logger.info("Updated displayname for user with id={} to '{}'", userID, userEntity.getDisplayname());
                 userRepository.save(userEntity);
@@ -79,10 +79,10 @@ public class UserService {
             else if (authenticatedUserRole.equals("admin")) {
 
                 UserDTO userDTO = new UserDTO(
-                    UUID.fromString(user.get("id").asText()),
-                    user.get("username").asText(),
-                    user.get("displayname").asText(),
-                    user.get("role").asText(),
+                    UUID.fromString(user.get("id").asString()),
+                    user.get("username").asString(),
+                    user.get("displayname").asString(),
+                    user.get("role").asString(),
                     user.get("deleted").asBoolean()
                 );
                 if(userDTO.deleted()) {

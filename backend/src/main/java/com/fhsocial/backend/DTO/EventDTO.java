@@ -16,5 +16,6 @@ public record EventDTO(
     double longitude,
     List<String> days,
     List<String> memberIDs,
+    List<String> tags,
     boolean deleted
 ) {}

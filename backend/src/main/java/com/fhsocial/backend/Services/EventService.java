@@ -11,10 +11,11 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fhsocial.backend.DTO.EventDTO;
 import com.fhsocial.backend.Entities.EventEntity;
 import com.fhsocial.backend.Repositories.EventRepository;
+
+import tools.jackson.databind.JsonNode;
 
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,7 @@ public class EventService {
             eventEntity.getLongitude(),
             eventEntity.getDays(),
             eventEntity.getMemberIDs(),
+            eventEntity.getTags(),
             eventEntity.getDeleted()
         );
     }
@@ -69,22 +71,23 @@ public class EventService {
             JsonNode daysNode = event.get("days");
             if (daysNode != null && daysNode.isArray()) {
                 for (JsonNode dayNode : daysNode) {
-                    days.add(dayNode.asText());
+                    days.add(dayNode.asString());
                 }
             }
 
             EventDTO eventDTO = new EventDTO(
-                UUID.fromString(event.get("id").asText()),
+                UUID.fromString(event.get("id").asString()),
                 authenticatedUserId,
-                event.get("title").asText(),
-                event.get("iso8601startDateTime").asText(),
-                event.get("iso8601endDateTime").asText(),
-                event.get("location").asText(),
-                event.get("description").asText(),
-                event.get("recommendation").asText(),
+                event.get("title").asString(),
+                event.get("iso8601startDateTime").asString(),
+                event.get("iso8601endDateTime").asString(),
+                event.get("location").asString(),
+                event.get("description").asString(),
+                event.get("recommendation").asString(),
                 event.get("latitude").asDouble(),
                 event.get("longitude").asDouble(),
                 days,
+                new ArrayList<String>(),
                 new ArrayList<String>(),
                 event.get("deleted").asBoolean()
             );
@@ -125,8 +128,8 @@ public class EventService {
 
     public ResponseEntity<Map<String, String>> changeMember(JsonNode changeMemberRequest, UUID authenticatedUserId) {
         try {
-            UUID userId = UUID.fromString(changeMemberRequest.get("userId").asText());
-            UUID eventId = UUID.fromString(changeMemberRequest.get("eventId").asText());
+            UUID userId = UUID.fromString(changeMemberRequest.get("userId").asString());
+            UUID eventId = UUID.fromString(changeMemberRequest.get("eventId").asString());
             boolean isAdded = changeMemberRequest.get("isAdded").asBoolean();
 
             EventEntity eventEntity = eventRepository.findById(eventId).orElse(null);
