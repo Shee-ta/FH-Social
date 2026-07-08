@@ -1,4 +1,4 @@
-package com.fhsocial.backend.DTO;
+package com.fhsocial.backend.DTO.EntityDTO;
 
 import java.util.UUID;
 
@@ -7,5 +7,6 @@ public record UserDTO(
     String username,
     String displayname,
     String role,
-    boolean deleted
+    String createdAt,
+    String editedAt
 ) {}

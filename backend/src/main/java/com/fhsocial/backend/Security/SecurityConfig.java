@@ -25,9 +25,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/events/**", "/comments/**", "/users/**", "/ai/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/upload/**", "/file/**").authenticated()
+                .requestMatchers("/auth/**", "/events/**", "/comments/**", "/users/**", "/ai/**", "/sse/**", "/file/**").permitAll()
+                .requestMatchers("/upload/**", "/delete/**", "/file/download").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

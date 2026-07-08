@@ -1,22 +1,31 @@
 package com.fhsocial.backend.Entities;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.domain.Persistable;
+import com.fhsocial.backend.DTO.EntityDTO.EventDTO;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -25,10 +34,12 @@ import jakarta.persistence.Transient;
 public class EventEntity implements Persistable<UUID> {
     
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "creator_user_entity_id", nullable = false)
+    private UserEntity creator;
 
     @Column(nullable = false)
     private String title;
@@ -42,10 +53,10 @@ public class EventEntity implements Persistable<UUID> {
     @Column(nullable = false)
     private String location;
 
-    @Column(nullable = false, length = 66536)
+    @Column(nullable = false, length = 2000)
     private String description;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, length = 300)
     private String recommendation;
 
     @Column(nullable = false)
@@ -57,26 +68,32 @@ public class EventEntity implements Persistable<UUID> {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "event_days", joinColumns = @JoinColumn(name = "event_id"))
     @Column(name = "event_day", nullable = false)
-    private List<String> days;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "event_memberIDs", joinColumns = @JoinColumn(name = "event_id"))
-    @Column(name = "member_id", nullable = false)
-    private List<String> memberIDs;
+    private List<String> days = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "event_tags", joinColumns = @JoinColumn(name = "event_id"))
     @Column(name = "tag", nullable = false)
-    private List<String> tags;
+    private List<String> tags = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "event_members",
+        joinColumns = @JoinColumn(name = "event_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<UserEntity> members = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentEntity> comments = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FilePreviewEntity> filePreviews = new ArrayList<>();
 
     @CreationTimestamp
     private Instant createdAt;
 
     @UpdateTimestamp
     private Instant editedAt;
-
-    @Column(nullable = false)
-    private boolean deleted = false;
 
     @Transient
     private boolean isNew = true;
@@ -93,11 +110,15 @@ public class EventEntity implements Persistable<UUID> {
     }
 
     public UUID getUserId() {
-        return userId;
+        return creator != null ? creator.getId() : null;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
+    public UserEntity getCreator() {
+        return creator;
+    }
+
+    public void setCreator(UserEntity creator) {
+        this.creator = creator;
     }
 
     public String getTitle() {
@@ -168,18 +189,6 @@ public class EventEntity implements Persistable<UUID> {
         return days;
     }
 
-    public void setDays(List<String> days) {
-        this.days = days;
-    }
-
-    public List<String> getMemberIDs() {
-        return memberIDs;
-    }
-
-    public void setMemberIDs(List<String> memberIDs) {
-        this.memberIDs = memberIDs;
-    }
-
     public List<String> getTags() {
         return tags;
     }
@@ -188,12 +197,70 @@ public class EventEntity implements Persistable<UUID> {
         this.tags = tags;
     }
 
-    public boolean getDeleted() {
-        return deleted;
+    public void setDays(List<String> days) {
+        this.days = days;
     }
 
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
+    public List<UserEntity> getMembers() {
+        return members;
+    }
+
+    public void setMembers(List<UserEntity> members) {
+        this.members = members;
+    }
+
+    public void addMember(UserEntity member) {
+        if (members.stream().noneMatch(existing -> existing.getId().equals(member.getId()))) members.add(member);
+        member.addMemberOfEvent(this);
+    }
+
+    public void removeMember(UserEntity member) {
+        members.removeIf(existing -> existing.getId().equals(member.getId()));
+        member.removeMemberOfEvent(this);
+    }
+
+    public List<CommentEntity> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<CommentEntity> comments) {
+        this.comments = comments;
+    }
+
+    public void addComment(CommentEntity comment) {
+        comments.add(comment);
+        comment.setEvent(this);
+    }
+
+    public void removeComment(CommentEntity comment) {
+        comments.remove(comment);
+        comment.setEvent(null);
+    }
+
+    public List<FilePreviewEntity> getFilePreviews() {
+        return filePreviews;
+    }
+
+    public void setFilePreviews(List<FilePreviewEntity> filePreviews) {
+        this.filePreviews = filePreviews;
+    }
+
+    public void addFilePreview(FilePreviewEntity filePreview) {
+        filePreviews.add(filePreview);
+        filePreview.setEvent(this);
+    }
+
+    public void removeFilePreview(FilePreviewEntity filePreview) {
+        filePreviews.remove(filePreview);
+        filePreview.setEvent(null);
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getEditedAt() {
+        return editedAt;
     }
 
     @Override
@@ -205,6 +272,25 @@ public class EventEntity implements Persistable<UUID> {
     @PostPersist
     private void markNotNew() {
         this.isNew = false;
+    }
+
+    public EventDTO toDto() {
+        return new EventDTO(
+            this.getId(),
+            this.getCreator().toDto(),
+            this.getTitle(),
+            this.getIso8601startDateTime(),
+            this.getIso8601endDateTime(),
+            this.getLocation(),
+            this.getDescription(),
+            this.getRecommendation(),
+            this.getLatitude(),
+            this.getLongitude(),
+            this.getDays(),
+            this.getTags(),
+            this.getCreatedAt().toString(),
+            this.getEditedAt().toString()
+        );
     }
 
     @Override

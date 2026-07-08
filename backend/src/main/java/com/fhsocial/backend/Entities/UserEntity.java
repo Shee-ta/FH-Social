@@ -1,15 +1,25 @@
 package com.fhsocial.backend.Entities;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.domain.Persistable;
 
+import com.fhsocial.backend.DTO.EntityDTO.UserDTO;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
@@ -21,7 +31,17 @@ import jakarta.validation.constraints.Pattern;
 public class UserEntity implements Persistable<UUID> {
     
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EventEntity> events = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "members")
+    private List<EventEntity> memberOfEvents = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentEntity> comments = new ArrayList<>();
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -42,9 +62,6 @@ public class UserEntity implements Persistable<UUID> {
     @UpdateTimestamp
     private Instant editedAt;
 
-    @Column(nullable = false)
-    private boolean deleted = false;
-
     @Transient
     private boolean isNew = true;
 
@@ -56,6 +73,58 @@ public class UserEntity implements Persistable<UUID> {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public List<CommentEntity> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<CommentEntity> comments) {
+        this.comments = comments;
+    }
+
+    public void addComment(CommentEntity comment) {
+        comments.add(comment);
+        comment.setCreator(this);
+    }
+
+    public void removeComment(CommentEntity comment) {
+        comments.remove(comment);
+        comment.setCreator(null);
+    }
+
+    public List<EventEntity> getEvents() {
+        return events;
+    }
+
+    public void setEvents(List<EventEntity> events) {
+        this.events = events;
+    }
+
+    public void addEvent(EventEntity event) {
+        events.add(event);
+        event.setCreator(this);
+    }
+
+    public void removeEvent(EventEntity event) {
+        events.remove(event);
+        event.setCreator(null);
+    }
+
+    public List<EventEntity> getMemberOfEvents() {
+        return memberOfEvents;
+    }
+
+    public void setMemberOfEvents(List<EventEntity> memberOfEvents) {
+        this.memberOfEvents = memberOfEvents;
+    }
+
+    public void addMemberOfEvent(EventEntity event) {
+        memberOfEvents.add(event);
+    }
+
+    public void removeMemberOfEvent(EventEntity event) {
+        memberOfEvents.remove(event);
     }
 
     public String getUsername() {
@@ -98,14 +167,6 @@ public class UserEntity implements Persistable<UUID> {
         return editedAt;
     }
 
-    public boolean getDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
-    }
-
     @Override
     public boolean isNew() {
         return isNew;
@@ -115,5 +176,16 @@ public class UserEntity implements Persistable<UUID> {
     @PostPersist
     private void markNotNew() {
         this.isNew = false;
+    }
+
+    public UserDTO toDto() {
+        return new UserDTO(
+            this.getId(),
+            this.getUsername(),
+            this.getDisplayname(),
+            this.getRole(),
+            this.getCreatedAt().toString(),
+            this.getEditedAt().toString()
+        );
     }
 }

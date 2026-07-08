@@ -6,11 +6,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
 import com.fhsocial.backend.Entities.EventEntity;
-import com.fhsocial.backend.Entities.FileEntity;
+import com.fhsocial.backend.Entities.FilePreviewEntity;
 import com.fhsocial.backend.Repositories.EventRepository;
 
 import reactor.core.publisher.Flux;
@@ -22,6 +24,8 @@ public class Brain {
 
     private final ChatClient chatClient;
     private final EventRepository eventRepository;
+    
+    Logger logger = LoggerFactory.getLogger(Brain.class);
 
     private static String systemPrompt = """
         You are an assistant for the app FH Social.
@@ -30,12 +34,12 @@ public class Brain {
         The documents can be lessons, excercise sheets or something else.
     """;
 
-    private String promptBuilder(EventEntity event, List<FileEntity> files, List<String> tags) {
+    private String promptBuilder(EventEntity event, List<FilePreviewEntity> files, List<String> tags) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("Event data: ");
         stringBuilder.append(event.toString());
 
-        for(FileEntity file : files) {
+        for(FilePreviewEntity file : files) {
             stringBuilder.append("\n\nFile data of: " +  file.getOriginalFileName() + "\n\n");
             stringBuilder.append(file.toString());
         }
@@ -91,7 +95,7 @@ public class Brain {
             """);
     }
 
-    public boolean generateRecommendation(Request request, List<FileEntity> files, EventEntity event, List<String> tags) {
+    public boolean generateRecommendation(Request request, List<FilePreviewEntity> files, EventEntity event, List<String> tags) {
         String prompt = promptBuilder(event, files, tags);
         Flux<String> responseStream = getAnswerStream(contextMap.get(request), prompt);
 
@@ -104,7 +108,7 @@ public class Brain {
         return true;
     }
 
-    public boolean generateTags(Request request, EventEntity event, List<FileEntity> files, List<String> tags) {
+    public boolean generateTags(Request request, EventEntity event, List<FilePreviewEntity> files, List<String> tags) {
         String prompt = promptBuilder(event, files, tags);
         Flux<String> responseStream = getAnswerStream(contextMap.get(request), prompt);
 

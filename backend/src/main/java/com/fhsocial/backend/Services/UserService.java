@@ -2,7 +2,6 @@ package com.fhsocial.backend.Services;
 
 import org.slf4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,8 +9,14 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.fhsocial.backend.DTO.UserDTO;
+import com.fhsocial.backend.DTO.IdWithEventIdDTO;
+import com.fhsocial.backend.DTO.IdWithUserDTO;
+import com.fhsocial.backend.DTO.SseDTO;
+import com.fhsocial.backend.DTO.EntityDTO.UserDTO;
+import com.fhsocial.backend.Entities.EventEntity;
 import com.fhsocial.backend.Entities.UserEntity;
+import com.fhsocial.backend.Enums.SseType;
+import com.fhsocial.backend.Repositories.EventRepository;
 import com.fhsocial.backend.Repositories.UserRepository;
 
 import tools.jackson.databind.JsonNode;
@@ -21,121 +26,131 @@ import org.slf4j.LoggerFactory;
 @Service
 public class UserService {
 
-    private static final int USER_TIME_TO_LIVE = 60*60*24;
-
     private UserRepository userRepository;
+    private EventRepository eventRepository;
+    private SseService sseService;
+
     private Logger logger = LoggerFactory.getLogger(UserService.class);
 
-    private UserDTO toDto(UserEntity userEntity) {
-        return new UserDTO(
-            userEntity.getId(),
-            userEntity.getUsername(),
-            userEntity.getDisplayname(),
-            userEntity.getRole(),
-            userEntity.getDeleted()
-        );
-    }
-
-    private void pendUserDeletion(UUID userId, int secondsUntilDeletion) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(secondsUntilDeletion * 1000L);
-                UserEntity userEntity = userRepository.findById(userId).orElse(null);
-                if (userEntity != null && userEntity.getDeleted()) {
-                    userRepository.delete(userEntity);
-                    logger.info("Permanently deleted account with id={}", userId);
-                }
-            } catch (InterruptedException e) {
-                logger.error("Error while waiting to delete account with id={}", userId, e);
-            }
-        }).start();
-    }
-
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, EventRepository eventRepository, SseService sseService) {
         this.userRepository = userRepository;
+        this.eventRepository = eventRepository;
+        this.sseService = sseService;
     }
 
     public ResponseEntity<Map<String, String>> uploadUser(JsonNode user, UUID authenticatedUserId) {
         try {
-            UserEntity authenticatedUserEntity = userRepository.findById(authenticatedUserId).orElseThrow(() -> new IllegalArgumentException("Authenticated user not found"));
-            String authenticatedUserRole = authenticatedUserEntity.getRole();
-            UUID userID = UUID.fromString(user.get("id").asString());
+            UserEntity authenticatedUser = userRepository.findById(authenticatedUserId).orElseThrow();
 
-            if(authenticatedUserRole.equals("student")) {
+            String id = user.get("id").asString();
 
-                if(!userID.equals(authenticatedUserId)) {
-                    logger.warn("User with id={} attempted to edit user with id={}", authenticatedUserId, userID);
-                    return ResponseEntity.status(403).body(Map.of("error", "You can only edit your own account"));
+            UserEntity userEntity;
+
+            if (id == null || id.isEmpty()) {
+                if (!authenticatedUser.getRole().equals("admin")) {
+                    logger.warn("User with id={} attempted to create a new user without admin privileges", authenticatedUserId);
+                    return ResponseEntity.status(403).body(Map.of("error", "Insufficient privileges"));
                 }
-
-                UserEntity userEntity = userRepository.findById(userID).orElseThrow(() -> new IllegalArgumentException("User not found"));
-                userEntity.setDisplayname(user.get("displayname").asString());
-
-                logger.info("Updated displayname for user with id={} to '{}'", userID, userEntity.getDisplayname());
-                userRepository.save(userEntity);
-
-                return ResponseEntity.ok(Map.of("status", "updated displayname"));
-            }
-            else if (authenticatedUserRole.equals("admin")) {
-
-                UserDTO userDTO = new UserDTO(
-                    UUID.fromString(user.get("id").asString()),
-                    user.get("username").asString(),
-                    user.get("displayname").asString(),
-                    user.get("role").asString(),
-                    user.get("deleted").asBoolean()
-                );
-                if(userDTO.deleted()) {
-                    logger.info("Deleted account with id={}, pending deletion in {} seconds", userID, USER_TIME_TO_LIVE);
-                    pendUserDeletion(userID, USER_TIME_TO_LIVE);
-                }
-
-                UserEntity userEntity = userRepository.findById(userDTO.id()).orElseGet(UserEntity::new);
-                userEntity.setId(userDTO.id());
-                userEntity.setUsername(userDTO.username());
-                userEntity.setDisplayname(userDTO.displayname());
-                userEntity.setRole(userDTO.role());
-                userEntity.setDeleted(userDTO.deleted());
-
-                userRepository.save(userEntity);
-
-                logger.debug("Mapped userDTO: {}", userDTO);
-                logger.info("Saved user with id={}", userDTO.id());
-
-                return ResponseEntity.ok(Map.of("status", "saved"));
+                userEntity = new UserEntity();
+            } else {
+                UUID userId = UUID.fromString(id);
+                userEntity = userRepository.findById(userId).orElseThrow();
             }
 
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid UUID in user payload", e);
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid UUID format"));
+            userEntity.setUsername(user.get("username").asString());
+            userEntity.setDisplayname(user.get("displayname").asString());
+            userEntity.setRole(user.get("role").asString());
+
+            userRepository.save(userEntity);
+
+            logger.info("Saved user with id={}", userEntity.getId());
+
+            return ResponseEntity.ok(Map.of("status", "saved"));
+
+        } catch (Exception e) {
+            logger.warn("Error while saving user", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error while saving user\""));
         }
-        return ResponseEntity.status(403).body(Map.of("error", "Invalid role"));
     }
 
-    public ResponseEntity<List<UserDTO>> getUsersAll() {
-        List<UserDTO> users = userRepository.findAll().stream()
-            .map(this::toDto)
-            .toList();
-        logger.info("Fetched {} users", users.size());
-        return ResponseEntity.ok(users);
+    public ResponseEntity<Map<String, String>> deleteUser(UUID userId, UUID authenticatedUserId) {
+        try {
+            UserEntity authenticatedUser = userRepository.findById(authenticatedUserId).orElseThrow();
+            UserEntity userEntity = userRepository.findById(userId).orElseThrow();
+
+            if (!authenticatedUser.getRole().equals("admin")) {
+                logger.warn("User with id={} attempted to delete user with id={} without admin privileges", authenticatedUserId, userId);
+                return ResponseEntity.status(403).body(Map.of("error", "Insufficient privileges"));
+            }
+
+            userRepository.delete(userEntity);
+
+            logger.info("Deleted user with id={}", userId);
+
+            sseService.sendSseEvent(new SseDTO<IdWithUserDTO>(
+                SseType.REMOVE_USER, 
+                new IdWithUserDTO(userEntity.getId().toString(), userEntity.toDto())
+            ));
+
+            return ResponseEntity.ok(Map.of("status", "deleted"));
+
+        } catch (Exception e) {
+            logger.warn("Error while deleting user", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error while deleting user\""));
+        }
     }
 
-    public ResponseEntity<List<UserDTO>> getUsersSince(Instant timeStamp) {
-        List<UserDTO> users = userRepository.findByCreatedAtAfterOrEditedAtAfter(timeStamp, timeStamp).stream()
-            .map(this::toDto)
-            .toList();
-        logger.info("Fetched {} users since {}", users.size(), timeStamp);
-        return ResponseEntity.ok(users);
+    public ResponseEntity<Map<String, String>> changeMembership(JsonNode changeMemberRequest, UUID authenticatedUserId) {
+        try {
+            UUID eventId = UUID.fromString(changeMemberRequest.get("eventId").asString());
+            boolean isAdded = changeMemberRequest.get("isAdded").asBoolean();
+
+            EventEntity event = eventRepository.findById(eventId).orElseThrow();
+            UserEntity user = userRepository.findById(authenticatedUserId).orElseThrow();
+
+            if (isAdded) {
+                event.addMember(user);
+            } else {
+                event.removeMember(user);
+            }
+
+            eventRepository.save(event);
+
+            sseService.sendSseEvent(new SseDTO<>(
+                isAdded ? SseType.ADD_MEMBER : SseType.REMOVE_MEMBER, 
+                isAdded ? new IdWithUserDTO(event.getId().toString(), user.toDto()) : new IdWithEventIdDTO(user.getId().toString(), event.getId().toString())
+            ));
+
+            logger.info("Changed member status of event with id={} with user id={}", event.getId(), authenticatedUserId);
+
+            return ResponseEntity.ok(Map.of("status", "saved"));
+
+        } catch (Exception e) {
+            logger.warn("Error while saving member status change for event with id={}", changeMemberRequest.get("eventId").asString(), e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error while saving member status change for event with id=\"" + changeMemberRequest.get("eventId").asString() + "\""));
+        }
     }
 
-    public ResponseEntity<UserDTO> getUserById(UUID userId) {
+    public ResponseEntity<List<UserDTO>> fetchUsersByEvent(UUID eventId) {
+        try {
+            EventEntity eventEntity = eventRepository.findById(eventId).orElseThrow();
+            List<UserDTO> users = eventEntity.getMembers().stream()
+                .map(UserEntity::toDto)
+                .toList();
+            logger.info("Fetched {} users for event with id={}", users.size(), eventId);
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            logger.warn("Error while retrieving users for event with id={}", eventId, e);
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    public ResponseEntity<UserDTO> fetchUserById(UUID userId) {
         return userRepository.findById(userId)
-            .map(user -> {
-                logger.info("Fetched user with id {}", userId);
-                return ResponseEntity.ok(toDto(user));
-            })
+            .map(UserEntity::toDto)
+            .map(ResponseEntity::ok)
             .orElseGet(() -> {
-                logger.warn("User with id {} not found", userId);
+                logger.warn("User with id={} not found", userId);
                 return ResponseEntity.notFound().build();
             });
     }

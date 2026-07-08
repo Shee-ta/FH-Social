@@ -1,7 +1,5 @@
 package com.fhsocial.backend.Init;
 
-import java.util.UUID;
-
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,16 +20,15 @@ public class PostgresInit implements CommandLineRunner {
     }
 
     private void generateUser(String username, String displayName, String role, String password) {
-
-        if(userRepository.findByUsername(username).isPresent()) {
+        if (userRepository.existsByUsername(username)) {
             return;
         }
 
         UserEntity user = new UserEntity();
-        user.setId(UUID.randomUUID());
         user.setUsername(username);
         user.setDisplayname(displayName);
         user.setPasswordhash(passwordEncoder.encode(password));
+        user.setRole(role);
         userRepository.save(user);
     }
 

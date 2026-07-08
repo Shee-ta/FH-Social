@@ -2,7 +2,6 @@ package com.fhsocial.backend.Services;
 
 import org.slf4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,9 +9,17 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.fhsocial.backend.DTO.CommentDTO;
+import com.fhsocial.backend.DTO.IdWithEventIdDTO;
+import com.fhsocial.backend.DTO.IdWithCommentDTO;
+import com.fhsocial.backend.DTO.SseDTO;
+import com.fhsocial.backend.DTO.EntityDTO.CommentDTO;
 import com.fhsocial.backend.Entities.CommentEntity;
+import com.fhsocial.backend.Entities.EventEntity;
+import com.fhsocial.backend.Entities.UserEntity;
+import com.fhsocial.backend.Enums.SseType;
 import com.fhsocial.backend.Repositories.CommentRepository;
+import com.fhsocial.backend.Repositories.EventRepository;
+import com.fhsocial.backend.Repositories.UserRepository;
 
 import tools.jackson.databind.JsonNode;
 
@@ -21,94 +28,108 @@ import org.slf4j.LoggerFactory;
 @Service
 public class CommentService {
 
-    private static final int COMMENT_TIME_TO_LIVE = 3600;
-
     private CommentRepository commentRepository;
+    private EventRepository eventRepository;
+    private UserRepository userRepository;
+    private SseService sseService;
+
     private Logger logger = LoggerFactory.getLogger(CommentService.class);
 
-    private CommentDTO toDto(CommentEntity commentEntity) {
-        return new CommentDTO(
-            commentEntity.getId(),
-            commentEntity.getUserId(),
-            commentEntity.getEventId(),
-            commentEntity.getContent(),
-            commentEntity.getCreatedAt().toString(),
-            commentEntity.getEditedAt().toString(),
-            commentEntity.getDeleted()
-        );
-    }
-
-    private void pendCommentDeletion(UUID commentId, int secondsUntilDeletion) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(secondsUntilDeletion * 1000L);
-                CommentEntity commentEntity = commentRepository.findById(commentId).orElse(null);
-                if (commentEntity != null && commentEntity.getDeleted()) {
-                    commentRepository.delete(commentEntity);
-                    logger.info("Permanently deleted comment with id={}", commentId);
-                }
-            } catch (InterruptedException e) {
-                logger.error("Error while waiting to delete comment with id={}", commentId, e);
-            }
-        }).start();
-    }
-
-    public CommentService(CommentRepository commentRepository) {
+    public CommentService(CommentRepository commentRepository, EventRepository eventRepository, UserRepository userRepository, SseService sseService) {
         this.commentRepository = commentRepository;
+        this.eventRepository = eventRepository;
+        this.userRepository = userRepository;
+        this.sseService = sseService;
     }
 
     public ResponseEntity<Map<String, String>> uploadComment(JsonNode comment, UUID authenticatedUserId) {
         try {
-            CommentDTO commentDTO = new CommentDTO(
-                UUID.fromString(comment.get("id").asString()),
-                authenticatedUserId,
-                UUID.fromString(comment.get("eventId").asString()),
-                comment.get("content").asString(),
-                comment.get("createdAt").asString(),
-                comment.get("editedAt").asString(),
-                comment.get("deleted").asBoolean()
-            );
-            if(commentDTO.deleted()) {
-                logger.info("Deleted comment with id={}, pending deletion in {} seconds", commentDTO.id(), COMMENT_TIME_TO_LIVE);
-                pendCommentDeletion(commentDTO.id(), COMMENT_TIME_TO_LIVE);
+            String id = comment.get("id").asString();
+            String eventId = comment.get("eventId").asString();
+
+            CommentEntity commentEntity;
+
+            UserEntity creator = userRepository.findById(authenticatedUserId).orElseThrow();
+            EventEntity event = eventRepository.findById(UUID.fromString(eventId)).orElseThrow();
+
+            if (id == null || id.isEmpty()) {
+                commentEntity = new CommentEntity();
+                commentEntity.setCreator(creator);
+                commentEntity.setEvent(event);
+            } else {
+                commentEntity = commentRepository.findById(UUID.fromString(id)).orElseThrow();
+                if (!commentEntity.getCreator().getId().equals(authenticatedUserId)) {
+                    logger.warn("User with id={} attempted to edit comment with id={} without permission", authenticatedUserId, id);
+                    return ResponseEntity.status(403).body(Map.of("error", "Insufficient privileges"));
+                }
             }
 
-
-            CommentEntity commentEntity = commentRepository.findById(commentDTO.id()).orElseGet(CommentEntity::new);
-            if (commentEntity.getId() == null) {
-                commentEntity.setId(commentDTO.id());
-            }
-            commentEntity.setUserId(commentDTO.userId());
-            commentEntity.setEventId(commentDTO.eventId());
-            commentEntity.setContent(commentDTO.content());
-            commentEntity.setDeleted(commentDTO.deleted());
+            commentEntity.setContent(comment.get("content").asString());
 
             commentRepository.save(commentEntity);
-            
-            logger.debug("Mapped CommentDTO: {}", commentDTO);
-            logger.info("Saved comment with id={}", commentDTO.id());
+
+            sseService.sendSseEvent(new SseDTO<IdWithCommentDTO>(
+                SseType.ADD_COMMENT,
+                new IdWithCommentDTO(eventId, commentEntity.toDto())
+            ));
+
+            logger.info("Saved comment with id={}", commentEntity.getId());
 
             return ResponseEntity.ok(Map.of("status", "saved"));
 
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid UUID in comment payload", e);
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid UUID format"));
+        } catch (Exception e) {
+            logger.warn("Error while saving comment", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error while saving comment"));
         }
     }
 
-    public ResponseEntity<List<CommentDTO>> getCommentsAll() {
-        List<CommentDTO> comments = commentRepository.findAll().stream()
-            .map(this::toDto)
-            .toList();
-        logger.info("Fetched {} comments", comments.size());
-        return ResponseEntity.ok(comments);
+    public ResponseEntity<Map<String, String>> deleteComment(UUID eventId, UUID commentId, UUID authenticatedUserId) {
+        try {
+            CommentEntity comment = commentRepository.findByIdAndEvent_Id(commentId, eventId).orElseThrow();
+
+            if (!comment.getCreator().getId().equals(authenticatedUserId)) {
+                logger.warn("User with id={} attempted to delete comment with id={} without permission", authenticatedUserId, commentId);
+                return ResponseEntity.status(403).body(Map.of("error", "Insufficient privileges"));
+            }
+
+            commentRepository.delete(comment);
+
+            sseService.sendSseEvent(new SseDTO<IdWithEventIdDTO>(
+                SseType.REMOVE_COMMENT, 
+                new IdWithEventIdDTO(commentId.toString(), eventId.toString())
+            ));
+
+            logger.info("Deleted comment with id={}", commentId);
+
+            return ResponseEntity.ok(Map.of("status", "deleted"));
+
+        } catch (Exception e) {
+            logger.warn("Error while deleting comment with id={}", commentId, e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error while deleting comment"));
+        }
     }
 
-    public ResponseEntity<List<CommentDTO>> getCommentsSince(Instant timeStamp) {
-        List<CommentDTO> comments = commentRepository.findByCreatedAtAfterOrEditedAtAfter(timeStamp, timeStamp).stream()
-            .map(this::toDto)
-            .toList();
-        logger.info("Fetched {} comments since {}", comments.size(), timeStamp);
-        return ResponseEntity.ok(comments);
+    public ResponseEntity<List<CommentDTO>> fetchCommentsByEvent(UUID eventId) {
+        try {
+            List<CommentDTO> comments = commentRepository.findByEvent_Id(eventId).stream()
+                .map(CommentEntity::toDto)
+                .toList();
+            logger.info("Fetched {} comments for event with id={}", comments.size(), eventId);
+            return ResponseEntity.ok(comments);
+        } catch (Exception e) {
+            logger.warn("Error while retrieving comments for event with id={}", eventId, e);
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    public ResponseEntity<CommentDTO> fetchCommentById(UUID eventId, UUID commentId) {
+        try {
+            CommentEntity comment = commentRepository.findByIdAndEvent_Id(commentId, eventId).orElseThrow();
+            CommentDTO commentDTO = comment.toDto();
+            return ResponseEntity.ok(commentDTO);
+        } catch (Exception e) {
+            logger.warn("Error while fetching comment with id={}", commentId, e);
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 }

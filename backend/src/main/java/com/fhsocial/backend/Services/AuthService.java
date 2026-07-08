@@ -6,12 +6,11 @@ import java.util.UUID;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.fhsocial.backend.DTO.UserDTO;
+import com.fhsocial.backend.DTO.EntityDTO.UserDTO;
 import com.fhsocial.backend.Entities.UserEntity;
 import com.fhsocial.backend.Repositories.AuthRepository;
 import com.fhsocial.backend.Security.JwtService;
@@ -50,13 +49,13 @@ public class AuthService {
         Optional<UserEntity> user = authRepository.findByUsername(username);
         if (user.isEmpty()) {
             logger.warn("Login failed for unknown username={}", username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid credentials"));
+            return ResponseEntity.status(403).body(Map.of("error", "invalid credentials"));
         }
 
         UserEntity userEntity = user.get();
         if (!passwordsMatch(password, userEntity.getPasswordhash())) {
             logger.warn("Login failed due to invalid password for username={}", username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid credentials"));
+            return ResponseEntity.status(403).body(Map.of("error", "invalid credentials"));
         }
 
         UUID userId = userEntity.getId();
@@ -67,7 +66,8 @@ public class AuthService {
             userEntity.getUsername(),
             userEntity.getDisplayname(),
             userEntity.getRole(),
-            userEntity.getDeleted()
+            userEntity.getCreatedAt().toString(),
+            userEntity.getEditedAt().toString()
         );
         return ResponseEntity.ok(Map.of("accessToken", accessToken, "user", userDTO));
     }

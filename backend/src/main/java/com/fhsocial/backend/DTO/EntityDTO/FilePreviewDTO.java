@@ -1,15 +1,13 @@
-package com.fhsocial.backend.DTO;
+package com.fhsocial.backend.DTO.EntityDTO;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public record FileDTO (
+public record FilePreviewDTO (
     UUID id,
-    UUID eventId,
     String originalFileName,
     String savedFileName,
     Long size,
-    Instant createdAt,
-    boolean deleted
+    Instant createdAt
 ) {}
 

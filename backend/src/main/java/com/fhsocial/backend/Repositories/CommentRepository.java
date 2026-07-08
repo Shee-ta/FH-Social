@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
     
     List<CommentEntity> findByCreatedAtAfterOrEditedAtAfter(Instant createdAt, Instant editedAt);
+    List<CommentEntity> findByEvent_Id(UUID eventId);
+    java.util.Optional<CommentEntity> findByIdAndEvent_Id(UUID id, UUID eventId);
 }

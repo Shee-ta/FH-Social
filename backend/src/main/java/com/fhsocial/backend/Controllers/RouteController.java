@@ -1,10 +1,10 @@
 package com.fhsocial.backend.Controllers;
 
-import com.fhsocial.backend.DTO.CommentDTO;
-import com.fhsocial.backend.DTO.EventDTO;
-import com.fhsocial.backend.DTO.FileDTO;
 import com.fhsocial.backend.DTO.LoginRequestDTO;
-import com.fhsocial.backend.DTO.UserDTO;
+import com.fhsocial.backend.DTO.EntityDTO.CommentDTO;
+import com.fhsocial.backend.DTO.EntityDTO.EventDTO;
+import com.fhsocial.backend.DTO.EntityDTO.FilePreviewDTO;
+import com.fhsocial.backend.DTO.EntityDTO.UserDTO;
 import com.fhsocial.backend.Services.AiService;
 import com.fhsocial.backend.Services.AuthService;
 import com.fhsocial.backend.Services.CommentService;
@@ -14,8 +14,6 @@ import com.fhsocial.backend.Services.UserService;
 
 import tools.jackson.databind.JsonNode;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -27,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,8 +39,6 @@ public class RouteController {
     private final UserService userService;
     private final FileService fileService;
     private final AiService aiService;
-
-    private Logger logger = LoggerFactory.getLogger(RouteController.class);
 
     public RouteController(EventService eventService, CommentService commentService, AuthService authService, UserService userService, FileService fileService, AiService aiService) {
         this.eventService = eventService;
@@ -64,13 +59,14 @@ public class RouteController {
         return eventService.uploadEvent(event, authenticatedUserId);
     }
 
-    @PostMapping("/upload/event/changeMember")
-    public ResponseEntity<Map<String, String>> changeMember(
-        @RequestBody JsonNode changeMemberRequest,
+    @PostMapping("/delete/event")
+    public ResponseEntity<Map<String, String>> deleteEvent(
+        @RequestParam String eventIdStr,
         Principal principal
     ) throws IllegalArgumentException {
         UUID authenticatedUserId = UUID.fromString(principal.getName());
-        return eventService.changeMember(changeMemberRequest, authenticatedUserId);
+        UUID eventId = UUID.fromString(eventIdStr);
+        return eventService.deleteEvent(eventId, authenticatedUserId);
     }
 
     @GetMapping("/events/all")
@@ -78,11 +74,12 @@ public class RouteController {
         return eventService.getEventsAll();
     }
 
-    @GetMapping("/events/since")
-    public ResponseEntity<List<EventDTO>> getEventsSince(
-        @RequestParam Instant timeStamp
+    @GetMapping("/events/by-id")
+    public ResponseEntity<EventDTO> getEventById(
+        @RequestParam String eventIdStr
     ) {
-        return eventService.getEventsSince(timeStamp);
+        UUID eventId = UUID.fromString(eventIdStr);
+        return eventService.getEventById(eventId);
     }
 
     // --- COMMENT ENDPOINTS --- //
@@ -95,16 +92,34 @@ public class RouteController {
         return commentService.uploadComment(comment, authenticatedUserId);
     }
 
-    @GetMapping("/comments/all")
-    public ResponseEntity<List<CommentDTO>> getCommentsAll() {
-        return commentService.getCommentsAll();
+    @PostMapping("/delete/comment")
+    public ResponseEntity<Map<String, String>> deleteComment(
+        @RequestParam String eventIdStr,
+        @RequestParam String commentIdStr,
+        Principal principal
+    ) throws IllegalArgumentException {
+        UUID authenticatedUserId = UUID.fromString(principal.getName());
+        UUID eventId = UUID.fromString(eventIdStr);
+        UUID commentId = UUID.fromString(commentIdStr);
+        return commentService.deleteComment(eventId, commentId, authenticatedUserId);
     }
 
-    @GetMapping("/comments/since")
-    public ResponseEntity<List<CommentDTO>> getCommentsSince(
-        @RequestParam Instant timeStamp
+    @GetMapping("/comments/by-event")
+    public ResponseEntity<List<CommentDTO>> getCommentsByEvent(
+        @RequestParam String eventIdStr
     ) {
-        return commentService.getCommentsSince(timeStamp);
+        UUID eventId = UUID.fromString(eventIdStr);
+        return commentService.fetchCommentsByEvent(eventId);
+    }
+
+    @GetMapping("/comments/by-id")
+    public ResponseEntity<CommentDTO> getCommentById(
+        @RequestParam String eventIdStr,
+        @RequestParam String commentIdStr
+    ) {
+        UUID eventId = UUID.fromString(eventIdStr);
+        UUID commentId = UUID.fromString(commentIdStr);
+        return commentService.fetchCommentById(eventId, commentId);
     }
 
     // --- USER ENDPOINTS --- //
@@ -117,24 +132,39 @@ public class RouteController {
         return userService.uploadUser(user, authenticatedUserId);
     }
 
-    @GetMapping("/users/all")
-    public ResponseEntity<List<UserDTO>> getUsersAll() {
-        logger.info("Fetching all users");
-        return userService.getUsersAll();
+    @PostMapping("/delete/user")
+    public ResponseEntity<Map<String, String>> deleteUser(
+        @RequestParam String userIdStr,
+        Principal principal
+    ) throws IllegalArgumentException {
+        UUID authenticatedUserId = UUID.fromString(principal.getName());
+        UUID userId = UUID.fromString(userIdStr);
+        return userService.deleteUser(userId, authenticatedUserId);
     }
 
-    @GetMapping("/users/since")
-    public ResponseEntity<List<UserDTO>> getUsersSince(
-        @RequestParam Instant timeStamp
-    ) {
-        return userService.getUsersSince(timeStamp);
+    @PostMapping("/upload/user/member-change")
+    public ResponseEntity<Map<String, String>> changeMember(
+        @RequestBody JsonNode changeMemberRequest,
+        Principal principal
+    ) throws IllegalArgumentException {
+        UUID authenticatedUserId = UUID.fromString(principal.getName());
+        return userService.changeMembership(changeMemberRequest, authenticatedUserId);
     }
 
-    @GetMapping("/users/byId")
-    public ResponseEntity<UserDTO> getUserById(
-        @RequestParam UUID userId
+     @GetMapping("/users/by-event")
+    public ResponseEntity<List<UserDTO>> fetchUsersByEvent(
+        @RequestParam String eventIdStr
     ) {
-        return userService.getUserById(userId);
+        UUID eventId = UUID.fromString(eventIdStr);
+        return userService.fetchUsersByEvent(eventId);
+    }
+
+    @GetMapping("/users/by-id")
+    public ResponseEntity<UserDTO> fetchUserById(
+        @RequestParam String userIdStr
+    ) {
+        UUID userId = UUID.fromString(userIdStr);
+        return userService.fetchUserById(userId);
     }
 
     // --- FILE ENDPOINTS --- //
@@ -149,7 +179,7 @@ public class RouteController {
         return fileService.uploadFile(file, eventId, authenticatedUserId);
     }
 
-    @PostMapping("/file/delete")
+    @PostMapping("/delete/file")
     public ResponseEntity<Map<String, String>> deleteFile(
         @RequestParam String fileIdStr,
         Principal principal
@@ -159,14 +189,20 @@ public class RouteController {
         return fileService.deleteFile(fileId, authenticatedUserId);
     }
 
-    @GetMapping("/file/previews")
-    public ResponseEntity<List<FileDTO>> getFilePreviews(
-        @RequestParam String eventIdStr,
-        Principal principal
-    ) throws IllegalArgumentException{
-        UUID authenticatedUserId = UUID.fromString(principal.getName());
+    @GetMapping("/file/previews/by-event")
+    public ResponseEntity<List<FilePreviewDTO>> fetchFilePreviewsByEvent(
+        @RequestParam String eventIdStr
+    ) {
         UUID eventId = UUID.fromString(eventIdStr);
-        return fileService.getFilePreviews(eventId, authenticatedUserId);
+        return fileService.fetchFilePreviewsByEvent(eventId);
+    }
+
+    @GetMapping("/file/previews/by-id")
+    public ResponseEntity<FilePreviewDTO> fetchFilePreviewById(
+        @RequestParam String fileIdStr
+    ) throws IllegalArgumentException {
+        UUID fileId = UUID.fromString(fileIdStr);
+        return fileService.fetchFilePreviewById(fileId);
     }
 
     @GetMapping("/file/download")
