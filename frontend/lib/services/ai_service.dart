@@ -6,11 +6,15 @@ import 'package:http/http.dart' as http;
 
 class AiService {
 
-  final String _baseUrl;
+  String _baseUrl;
 
   AiService(
     this._baseUrl
   );
+
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+  }
 
   Future<bool> generateRecommendation(String eventId, String? accessToken) async {
 

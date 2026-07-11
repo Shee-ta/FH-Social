@@ -29,6 +29,7 @@ void eventPopup(
   final maxSheetHeight = mediaQuery.size.height - mediaQuery.padding.top - appBarHeight;
 
   showModalBottomSheet(
+    useSafeArea: true,
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
@@ -36,11 +37,16 @@ void eventPopup(
       maxHeight: maxSheetHeight - 10,
       maxWidth: Const.modalWidth,
     ),
-    builder: (_) => EventPopup(
-      event: event,
-      commentDrafts: commentDrafts,
-      setEventDraft: setEventDraft,
-      createEvent: createEvent,
+    builder: (_) => Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: EventPopup(
+        event: event,
+        commentDrafts: commentDrafts,
+        setEventDraft: setEventDraft,
+        createEvent: createEvent,
+      ),
     ),
   );
 }

@@ -7,11 +7,15 @@ import 'package:http/http.dart' as http;
 
 class CommentService {
 
-  final String _baseUrl;
+  String _baseUrl;
 
   CommentService(
     this._baseUrl
   );
+
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+  }
 
   Future<bool> uploadComment(CommentDTO comment, String? accessToken) async {
     

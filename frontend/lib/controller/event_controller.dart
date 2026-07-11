@@ -68,6 +68,11 @@ class EventController extends ChangeNotifier {
         _events.add(Event(eventDTO));
       }
     }
+    for (final event in _events) {
+      if (!eventDTOs.any((dto) => dto.id == event.id)) {
+        removeEvent(IdDTO(id: event.id));
+      }
+    }
     updateEvents();
     notifyListeners();
   }

@@ -7,11 +7,15 @@ import 'package:http/http.dart' as http;
 
 class EventService {
 
-  final String _baseUrl;
+  String _baseUrl;
 
   EventService(
     this._baseUrl
   );
+
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+  }
 
   Future<bool> uploadEvent(EventDTO event, String? accessToken) async {
 

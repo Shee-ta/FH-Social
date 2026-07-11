@@ -20,19 +20,21 @@ class DateTimePickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            icon: Icon(
+            icon: screenWidth > 400 ? Icon(
               Icons.calendar_today,
               size: 18,
               color: hasDateTimeError ? colorScheme.error : null,
-            ),
-            label: Text(
-              draft.date == null
-                  ? 'Pick date *'
-                  : '${draft.date!.day.toString().padLeft(2, '0')}.${draft.date!.month.toString().padLeft(2, '0')}.${draft.date!.year}',
+            ) : null,
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                draft.date == null ? 'Pick date *' : '${draft.date!.day.toString().padLeft(2, '0')}.${draft.date!.month.toString().padLeft(2, '0')}.${draft.date!.year}',
+              ),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: hasDateTimeError ? colorScheme.error : null,
@@ -60,13 +62,16 @@ class DateTimePickerRow extends StatelessWidget {
         Const.spacing,
         Expanded(
           child: OutlinedButton.icon(
-            icon: Icon(
+            icon: screenWidth > 400 ? Icon(
               Icons.access_time,
               size: 18,
               color: hasDateTimeError || hasStartEndTimeMismatchError ? colorScheme.error : null,
-            ),
-            label: Text(
-              draft.startTime == null ? 'Start time *' : draft.startTime!.format(context),
+            ) : null,
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                draft.startTime == null ? 'Start time *' : draft.startTime!.format(context),
+              ),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: hasDateTimeError || hasStartEndTimeMismatchError ? colorScheme.error : null,
@@ -100,13 +105,16 @@ class DateTimePickerRow extends StatelessWidget {
         Const.spacing,
         Expanded(
           child: OutlinedButton.icon(
-            icon: Icon(
+            icon: screenWidth > 400 ? Icon(
               Icons.timer_off_outlined,
               size: 18,
               color: hasStartEndTimeMismatchError ? colorScheme.error : null,
-            ),
-            label: Text(
-              draft.endTime == null ? 'End time' : draft.endTime!.format(context),
+            ) : null,
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                draft.endTime == null ? 'End time' : draft.endTime!.format(context),
+              ),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: hasStartEndTimeMismatchError ? colorScheme.error : null,
@@ -119,12 +127,12 @@ class DateTimePickerRow extends StatelessWidget {
               ),
             ),
             onLongPress: draft.endTime == null
-                ? null
-                : () => setTimeAndDate(
-                      draft.startTime ?? TimeOfDay.now(),
-                      null,
-                      draft.date,
-                    ),
+            ? null
+            : () => setTimeAndDate(
+                  draft.startTime ?? TimeOfDay.now(),
+                  null,
+                  draft.date,
+                ),
             onPressed: () async {
               final time = await showTimePicker(
                 context: context,

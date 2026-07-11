@@ -66,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: const TextStyle(fontSize: 16),
                           ),
                         ),
-                        const Icon(Icons.exit_to_app, size: 24),
+                        const Icon(Icons.exit_to_app),
                       ]
                     ),
                   )

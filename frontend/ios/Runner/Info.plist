@@ -26,6 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+<<<<<<< HEAD
+=======
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>The app connects to the FH Social backend on your local network.</string>
+>>>>>>> 9fecced (Added introduction to export app to mobile)
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location is used to show your current position on the campus map.</string>
 	<key>UIApplicationSceneManifest</key>

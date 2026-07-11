@@ -2,16 +2,20 @@
 import 'package:flutter/foundation.dart';
 
 class Environment {
+  // For physical devices, pass BACKEND_URL with your Mac's LAN address:
+  // flutter run --dart-define=BACKEND_URL=http://192.168.x.x:3000
 
   static String getBaseUrl() {
 
-    String configuredBaseUrl = const String.fromEnvironment(
+    final configuredBaseUrl = const String.fromEnvironment(
       'BACKEND_URL',
       defaultValue: '',
-    );
+    ).trim();
 
     if (configuredBaseUrl.isNotEmpty) {
-      return configuredBaseUrl;
+      return configuredBaseUrl.endsWith('/')
+          ? configuredBaseUrl.substring(0, configuredBaseUrl.length - 1)
+          : configuredBaseUrl;
     }
 
     if (kIsWeb) {

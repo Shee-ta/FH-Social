@@ -37,7 +37,7 @@ class AuthLoginResult {
 
 class AuthService {
 
-  final String _baseUrl;
+  String _baseUrl;
   final TokenStorageService _tokenStorage;
   String? _accessToken;
 
@@ -47,6 +47,10 @@ class AuthService {
     this._baseUrl
   )
   : _tokenStorage = TokenStorageService();
+
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+  }
 
   Future<void> _onTokenExpired() async {
     await _tokenStorage.removeAccessToken();

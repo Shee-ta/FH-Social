@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/UI/app_colors.dart';
 import 'package:frontend/controller/auth_controller.dart';
 import 'package:frontend/di/app_di.dart';
+import 'package:frontend/screens/backend_url_settings_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/services/connection_services/sse_listener_service.dart';
 import 'screens/login_screen.dart';
@@ -27,7 +28,6 @@ class _FHSocialAppState extends State<FHSocialApp> {
   late final SseListenerService _sseListenerService;
 
   _FHSocialAppState() {
-    _di.init();
     _authController = _di.authController;
     _sseListenerService = _di.sseListenerService;
   }
@@ -115,6 +115,13 @@ PageRoute<void> _guardedRoute(
         direction: Direction.left,
         settings: const RouteSettings(name: SettingsScreen.routeName),
         child: SettingsScreen(),
+      );
+
+    case BackendUrlSettingsScreen.routeName:
+      return _pageRoute(
+        direction: Direction.left,
+        settings: const RouteSettings(name: BackendUrlSettingsScreen.routeName),
+        child: BackendUrlSettingsScreen(),
       );
 
     default:

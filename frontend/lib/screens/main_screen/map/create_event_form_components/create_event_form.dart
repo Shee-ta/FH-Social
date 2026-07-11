@@ -49,16 +49,21 @@ void createEventForm(
       maxHeight: maxSheetHeight - 10,
       maxWidth: Const.modalWidth,
     ),
-    builder: (_) => CreateEventForm(
-      draft: draft,
-      useLocationForEvent: useLocationForEvent,
-      events: events,
-      draftReset: draftReset,
-      hasPickedLocation: hasPickedLocation,
-      setHasPickedLocation: setHasPickedLocation,
-      setUsingCustomLocation: setUsingCustomLocation,
-      setPickingLocation: setPickingLocation,
-    )
+    builder: (_) => Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: CreateEventForm(
+        draft: draft,
+        useLocationForEvent: useLocationForEvent,
+        events: events,
+        draftReset: draftReset,
+        hasPickedLocation: hasPickedLocation,
+        setHasPickedLocation: setHasPickedLocation,
+        setUsingCustomLocation: setUsingCustomLocation,
+        setPickingLocation: setPickingLocation,
+      )
+    ),
   );
 }
 

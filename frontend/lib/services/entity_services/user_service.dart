@@ -9,11 +9,15 @@ import 'package:http/http.dart' as http;
 
 class UserService {
 
-  final String _baseUrl;
+  String _baseUrl;
 
   UserService(
     this._baseUrl
   );
+
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+  }
 
   Future<bool> uploadUser(UserDTO user, String? accessToken) async {
 

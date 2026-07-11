@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class SseConnectionService {
-  final String _baseUrl;
+  String _baseUrl;
   http.Client client = http.Client();
 
   int _connectionAttempts = 0;
@@ -20,6 +20,10 @@ class SseConnectionService {
   SseConnectionService(
     this._baseUrl
   );
+
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+  }
 
   void dispose() {
     _connect = false;

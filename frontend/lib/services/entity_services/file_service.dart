@@ -9,11 +9,15 @@ import 'package:http/http.dart' as http;
 
 class FileService {
 
-  final String _baseUrl;
+  String _baseUrl;
 
   FileService(
     this._baseUrl
   );
+
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+  }
 
   Future<bool> uploadFile(http.MultipartFile file, String eventId, String? accessToken) async {
 

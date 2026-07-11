@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/di/app_di.dart';
+import 'package:frontend/screens/backend_url_settings_screen.dart';
 import 'package:frontend/services/auth_service.dart';
 
 import '../controller/auth_controller.dart';
@@ -79,6 +80,15 @@ class _LoginScreenState extends State<LoginScreen> {
           appBar: AppBar(
             automaticallyImplyLeading: false,
             title: const Text('Log In'),
+            actions: [
+              IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, BackendUrlSettingsScreen.routeName);
+                },
+                tooltip: 'Backend URL',
+                icon: const Icon(Icons.dns_outlined),
+              ),
+            ],
             leading: IconButton(
               onPressed: () {
                 Navigator.pushNamedAndRemoveUntil(
