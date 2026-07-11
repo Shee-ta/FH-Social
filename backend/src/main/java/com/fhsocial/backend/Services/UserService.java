@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fhsocial.backend.DTO.IdWithEventIdDTO;
 import com.fhsocial.backend.DTO.IdWithUserDTO;
@@ -15,9 +16,11 @@ import com.fhsocial.backend.DTO.SseDTO;
 import com.fhsocial.backend.DTO.EntityDTO.UserDTO;
 import com.fhsocial.backend.Entities.EventEntity;
 import com.fhsocial.backend.Entities.UserEntity;
+import com.fhsocial.backend.Entities.UserSettingsEntity;
 import com.fhsocial.backend.Enums.SseType;
 import com.fhsocial.backend.Repositories.EventRepository;
 import com.fhsocial.backend.Repositories.UserRepository;
+import com.fhsocial.backend.Repositories.UserSettingsRepository;
 
 import tools.jackson.databind.JsonNode;
 
@@ -28,16 +31,19 @@ public class UserService {
 
     private UserRepository userRepository;
     private EventRepository eventRepository;
+    private UserSettingsRepository userSettingsRepository;
     private SseService sseService;
 
     private Logger logger = LoggerFactory.getLogger(UserService.class);
 
-    public UserService(UserRepository userRepository, EventRepository eventRepository, SseService sseService) {
+    public UserService(UserRepository userRepository, EventRepository eventRepository, UserSettingsRepository userSettingsRepository, SseService sseService) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
+        this.userSettingsRepository = userSettingsRepository;
         this.sseService = sseService;
     }
 
+    @Transactional
     public ResponseEntity<Map<String, String>> uploadUser(JsonNode user, UUID authenticatedUserId) {
         try {
             UserEntity authenticatedUser = userRepository.findById(authenticatedUserId).orElseThrow();
@@ -52,6 +58,8 @@ public class UserService {
                     return ResponseEntity.status(403).body(Map.of("error", "Insufficient privileges"));
                 }
                 userEntity = new UserEntity();
+                new UserSettingsEntity(userEntity);
+
             } else {
                 UUID userId = UUID.fromString(id);
                 userEntity = userRepository.findById(userId).orElseThrow();
@@ -62,6 +70,7 @@ public class UserService {
             userEntity.setRole(user.get("role").asString());
 
             userRepository.save(userEntity);
+            userRepository.flush();
 
             logger.info("Saved user with id={}", userEntity.getId());
 
@@ -73,6 +82,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public ResponseEntity<Map<String, String>> deleteUser(UUID userId, UUID authenticatedUserId) {
         try {
             UserEntity authenticatedUser = userRepository.findById(authenticatedUserId).orElseThrow();
@@ -84,6 +94,7 @@ public class UserService {
             }
 
             userRepository.delete(userEntity);
+            userRepository.flush();
 
             logger.info("Deleted user with id={}", userId);
 
@@ -100,6 +111,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public ResponseEntity<Map<String, String>> changeMembership(JsonNode changeMemberRequest, UUID authenticatedUserId) {
         try {
             UUID eventId = UUID.fromString(changeMemberRequest.get("eventId").asString());
@@ -115,6 +127,7 @@ public class UserService {
             }
 
             eventRepository.save(event);
+            eventRepository.flush();
 
             sseService.sendSseEvent(new SseDTO<>(
                 isAdded ? SseType.ADD_MEMBER : SseType.REMOVE_MEMBER, 
@@ -131,6 +144,35 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public ResponseEntity<Map<String, String>> changeUserSettings(JsonNode settings, UUID authenticatedUserId) {
+        try {
+            UserEntity user = userRepository.findById(authenticatedUserId).orElseThrow();
+            UserSettingsEntity userSettings = user.getUserSettings();
+
+            if (settings.has("themeColor")) {
+                userSettings.setThemeColor(settings.get("themeColor").asString());
+            }
+            if (settings.has("brightness")) {
+                userSettings.setBrightness(settings.get("brightness").asString());
+            }
+            if (settings.has("iconButtons")) {
+                userSettings.setIconButtons(settings.get("iconButtons").asBoolean());
+            }
+
+            userSettingsRepository.save(userSettings);
+            userSettingsRepository.flush();
+
+            logger.info("Changed user settings for user with id={}", authenticatedUserId);
+            
+            return ResponseEntity.ok(Map.of("status", "saved"));
+        } catch (Exception e) {
+            logger.warn("Error while saving user settings for user with id={}", authenticatedUserId, e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error while saving user settings for user with id=\"" + authenticatedUserId + "\""));
+        }
+    }
+
+    @Transactional(readOnly = true)
     public ResponseEntity<List<UserDTO>> fetchUsersByEvent(UUID eventId) {
         try {
             EventEntity eventEntity = eventRepository.findById(eventId).orElseThrow();
@@ -145,6 +187,7 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<UserDTO> fetchUserById(UUID userId) {
         return userRepository.findById(userId)
             .map(UserEntity::toDto)

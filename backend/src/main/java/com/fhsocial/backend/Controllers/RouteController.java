@@ -151,7 +151,16 @@ public class RouteController {
         return userService.changeMembership(changeMemberRequest, authenticatedUserId);
     }
 
-     @GetMapping("/users/by-event")
+    @PostMapping("/upload/user/settings")
+    public ResponseEntity<Map<String, String>> changeUserSettings(
+        @RequestBody JsonNode settings,
+        Principal principal
+    ) throws IllegalArgumentException {
+        UUID authenticatedUserId = UUID.fromString(principal.getName());
+        return userService.changeUserSettings(settings, authenticatedUserId);
+    }
+
+    @GetMapping("/users/by-event")
     public ResponseEntity<List<UserDTO>> fetchUsersByEvent(
         @RequestParam String eventIdStr
     ) {

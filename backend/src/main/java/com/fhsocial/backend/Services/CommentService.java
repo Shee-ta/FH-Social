@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fhsocial.backend.DTO.IdWithEventIdDTO;
 import com.fhsocial.backend.DTO.IdWithCommentDTO;
@@ -42,6 +43,7 @@ public class CommentService {
         this.sseService = sseService;
     }
 
+    @Transactional
     public ResponseEntity<Map<String, String>> uploadComment(JsonNode comment, UUID authenticatedUserId) {
         try {
             String id = comment.get("id").asString();
@@ -67,6 +69,7 @@ public class CommentService {
             commentEntity.setContent(comment.get("content").asString());
 
             commentRepository.save(commentEntity);
+            eventRepository.flush();
 
             sseService.sendSseEvent(new SseDTO<IdWithCommentDTO>(
                 SseType.ADD_COMMENT,
@@ -83,6 +86,7 @@ public class CommentService {
         }
     }
 
+    @Transactional
     public ResponseEntity<Map<String, String>> deleteComment(UUID eventId, UUID commentId, UUID authenticatedUserId) {
         try {
             CommentEntity comment = commentRepository.findByIdAndEvent_Id(commentId, eventId).orElseThrow();
@@ -92,7 +96,10 @@ public class CommentService {
                 return ResponseEntity.status(403).body(Map.of("error", "Insufficient privileges"));
             }
 
-            commentRepository.delete(comment);
+            EventEntity event = eventRepository.findById(eventId).orElseThrow();
+            event.removeComment(comment);
+            eventRepository.save(event);
+            eventRepository.flush();
 
             sseService.sendSseEvent(new SseDTO<IdWithEventIdDTO>(
                 SseType.REMOVE_COMMENT, 
@@ -109,6 +116,7 @@ public class CommentService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<List<CommentDTO>> fetchCommentsByEvent(UUID eventId) {
         try {
             List<CommentDTO> comments = commentRepository.findByEvent_Id(eventId).stream()
@@ -122,6 +130,7 @@ public class CommentService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<CommentDTO> fetchCommentById(UUID eventId, UUID commentId) {
         try {
             CommentEntity comment = commentRepository.findByIdAndEvent_Id(commentId, eventId).orElseThrow();

@@ -20,6 +20,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
@@ -34,14 +35,17 @@ public class UserEntity implements Persistable<UUID> {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "creator")
     private List<EventEntity> events = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.EAGER, mappedBy = "members")
     private List<EventEntity> memberOfEvents = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "creator")
     private List<CommentEntity> comments = new ArrayList<>();
+
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
+    private UserSettingsEntity userSettings;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -65,7 +69,9 @@ public class UserEntity implements Persistable<UUID> {
     @Transient
     private boolean isNew = true;
 
-    public UserEntity() {}
+    public UserEntity() {
+        this.userSettings = new UserSettingsEntity(this);
+    }
 
     public UUID getId() {
         return id;
@@ -85,12 +91,18 @@ public class UserEntity implements Persistable<UUID> {
 
     public void addComment(CommentEntity comment) {
         comments.add(comment);
-        comment.setCreator(this);
     }
 
     public void removeComment(CommentEntity comment) {
         comments.remove(comment);
-        comment.setCreator(null);
+    }
+
+    public UserSettingsEntity getUserSettings() {
+        return userSettings;
+    }
+
+    public void setUserSettings(UserSettingsEntity userSettings) {
+        this.userSettings = userSettings;
     }
 
     public List<EventEntity> getEvents() {
@@ -103,12 +115,10 @@ public class UserEntity implements Persistable<UUID> {
 
     public void addEvent(EventEntity event) {
         events.add(event);
-        event.setCreator(this);
     }
 
     public void removeEvent(EventEntity event) {
         events.remove(event);
-        event.setCreator(null);
     }
 
     public List<EventEntity> getMemberOfEvents() {

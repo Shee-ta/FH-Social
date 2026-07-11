@@ -16,6 +16,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fhsocial.backend.DTO.IdWithEventIdDTO;
@@ -83,6 +84,7 @@ public class FileService {
         this.sseService = sseService;
     }
     
+    @Transactional
     public ResponseEntity<Map<String, String>> uploadFile(MultipartFile file, UUID eventId, UUID authenticatedUserId) {
         try {
             EventEntity event = eventRepository.findById(eventId).orElseThrow();
@@ -114,6 +116,7 @@ public class FileService {
             }
 
             fileRepository.save(fileEntity);
+            fileRepository.flush();
 
             sseService.sendSseEvent(new SseDTO<IdWithFilePreviewDTO>(
                 SseType.ADD_FILE_PREVIEW,
@@ -128,6 +131,7 @@ public class FileService {
         }
     }
 
+    @Transactional
     public ResponseEntity<Map<String, String>> deleteFile(UUID fileId, UUID authenticatedUserId) {
 
         try {
@@ -139,14 +143,16 @@ public class FileService {
             }
 
             removeFileFromSystem(fileEntity.getSavedFileName());
-            fileRepository.delete(fileEntity);
+            eventEntity.removeFilePreview(fileEntity);
+            eventRepository.save(eventEntity);
+            eventRepository.flush();
 
             sseService.sendSseEvent(new SseDTO<IdWithEventIdDTO>(
                 SseType.REMOVE_FILE_PREVIEW,
-                new IdWithEventIdDTO(fileEntity.getId().toString(), fileEntity.getEventId().toString())
+                new IdWithEventIdDTO(fileId.toString(), eventEntity.getId().toString())
             ));
 
-            logger.info("Deleted file with id={} for event with id={}", fileEntity.getId(), fileEntity.getEventId());
+            logger.info("Deleted file with id={} for event with id={}", fileId, eventEntity.getId());
 
             return ResponseEntity.ok(Map.of("status", "deleted"));
         } catch (Exception e) {
@@ -155,6 +161,7 @@ public class FileService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<List<FilePreviewDTO>> fetchFilePreviewsByEvent(UUID eventId) {
         try {
             List<FilePreviewDTO> filePreviews = fileRepository.findByEvent_Id(eventId).stream()
@@ -168,6 +175,7 @@ public class FileService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<FilePreviewDTO> fetchFilePreviewById(UUID fileId) {
         try {
             FilePreviewEntity filePreview = fileRepository.findById(fileId).orElseThrow();
@@ -178,6 +186,7 @@ public class FileService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<Resource> downloadFile(UUID fileId, UUID authenticatedUserId) {
         try {
             FilePreviewEntity fileEntity = fileRepository.findById(fileId).orElseThrow();

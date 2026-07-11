@@ -53,6 +53,7 @@ public class EventService {
         return values;
     }
     
+    @Transactional
     public ResponseEntity<Map<String, String>> uploadEvent(JsonNode event, UUID authenticatedUserId) {
         try {
             List<String> days = parseStringArray(event, "days");
@@ -90,6 +91,7 @@ public class EventService {
             eventEntity.setDays(days);
 
             eventRepository.save(eventEntity);
+            eventRepository.flush();
 
             sseService.sendSseEvent(new SseDTO<EventDTO>(
                 SseType.ADD_EVENT, 
@@ -120,19 +122,17 @@ public class EventService {
             for (UUID fileId : fileIdsToDelete) {
                 fileService.deleteFile(fileId, authenticatedUserId);
             }
-
-            eventEntity.getMembers().forEach(member -> member.removeMemberOfEvent(eventEntity));
+            for (UserEntity user : new ArrayList<>(eventEntity.getMembers())) {
+                user.getMemberOfEvents().remove(eventEntity);
+            }
             eventEntity.getMembers().clear();
-            eventEntity.getCreator().getEvents().removeIf(event -> event.getId().equals(eventId));
-
             eventRepository.delete(eventEntity);
             eventRepository.flush();
-
+            
             if (eventRepository.existsById(eventId)) {
-                logger.warn("Event with id={} still exists after delete attempt", eventId);
-                return ResponseEntity.badRequest().body(Map.of("error", "Error while deleting event"));
+                logger.warn("Event with id={} still exists after deletion attempt", eventId);
+                return ResponseEntity.status(500).body(Map.of("error", "Error while deleting event"));
             }
-
             sseService.sendSseEvent(new SseDTO<IdDTO>(
                 SseType.REMOVE_EVENT, 
                 new IdDTO(eventEntity.getId().toString())
@@ -148,12 +148,14 @@ public class EventService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<List<EventDTO>> getEventsAll() {
         List<EventDTO> events = eventRepository.findAll().stream().map(EventEntity::toDto).toList();
         logger.info("Fetched {} events", events.size());
         return ResponseEntity.ok(events);
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<EventDTO> getEventById(UUID eventId) {
         try {
             EventEntity event = eventRepository.findById(eventId).orElseThrow();

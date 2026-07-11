@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fhsocial.backend.Entities.EventEntity;
 import com.fhsocial.backend.Entities.FilePreviewEntity;
@@ -95,41 +96,63 @@ public class Brain {
             """);
     }
 
+    @Transactional
     public boolean generateRecommendation(Request request, List<FilePreviewEntity> files, EventEntity event, List<String> tags) {
-        String prompt = promptBuilder(event, files, tags);
-        Flux<String> responseStream = getAnswerStream(contextMap.get(request), prompt);
+        try {
+            String prompt = promptBuilder(event, files, tags);
+            Flux<String> responseStream = getAnswerStream(contextMap.get(request), prompt);
 
-        String response = responseStream
-            .collect(Collectors.joining())
-            .block();
+            String response = responseStream
+                .collect(Collectors.joining())
+                .block();
 
-        event.setRecommendation(response);
-        eventRepository.save(event);
-        return true;
+            event.setRecommendation(response);
+
+            eventRepository.save(event);
+            eventRepository.flush();
+
+            return true;
+        }
+        catch (Exception e) {
+            logger.warn("Error while generating recommendation for event with id={}", event.getId(), e);
+            return false;
+        }
     }
 
+    @Transactional
     public boolean generateTags(Request request, EventEntity event, List<FilePreviewEntity> files, List<String> tags) {
-        String prompt = promptBuilder(event, files, tags);
-        Flux<String> responseStream = getAnswerStream(contextMap.get(request), prompt);
 
-        String response = responseStream
-            .filter(line -> line != null && !line.equals("[DONE]"))
-            .collect(Collectors.joining())
-            .block();
+        try {
+            String prompt = promptBuilder(event, files, tags);
+            Flux<String> responseStream = getAnswerStream(contextMap.get(request), prompt);
 
-        List<String> generatedTags = List.of();
+            String response = responseStream
+                .filter(line -> line != null && !line.equals("[DONE]"))
+                .collect(Collectors.joining())
+                .block();
 
-        if (response != null && !response.isBlank()) {
-            String[] tagsArray = response.split(",");
-            generatedTags = Stream.of(tagsArray)
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .toList();
+            List<String> generatedTags = List.of();
+
+            if (response != null && !response.isBlank()) {
+                String[] tagsArray = response.split(",");
+                generatedTags = Stream.of(tagsArray)
+                    .map(String::trim)
+                    .filter(tag -> !tag.isEmpty())
+                    .toList();
+            }
+
+            event.getTags().clear();
+            event.getTags().addAll(generatedTags);
+
+            eventRepository.save(event);
+            eventRepository.flush();
+
+            return true;
+        } 
+        catch (Exception e) {
+            logger.warn("Error while generating tags for event with id={}", event.getId(), e);
+            return false;
         }
-
-        event.setTags(generatedTags);
-        eventRepository.save(event);
-        return true;
     }
 }
 

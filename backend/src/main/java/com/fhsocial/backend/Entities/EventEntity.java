@@ -211,12 +211,10 @@ public class EventEntity implements Persistable<UUID> {
 
     public void addMember(UserEntity member) {
         if (members.stream().noneMatch(existing -> existing.getId().equals(member.getId()))) members.add(member);
-        member.addMemberOfEvent(this);
     }
 
     public void removeMember(UserEntity member) {
         members.removeIf(existing -> existing.getId().equals(member.getId()));
-        member.removeMemberOfEvent(this);
     }
 
     public List<CommentEntity> getComments() {
@@ -229,12 +227,10 @@ public class EventEntity implements Persistable<UUID> {
 
     public void addComment(CommentEntity comment) {
         comments.add(comment);
-        comment.setEvent(this);
     }
 
     public void removeComment(CommentEntity comment) {
         comments.remove(comment);
-        comment.setEvent(null);
     }
 
     public List<FilePreviewEntity> getFilePreviews() {
@@ -247,12 +243,10 @@ public class EventEntity implements Persistable<UUID> {
 
     public void addFilePreview(FilePreviewEntity filePreview) {
         filePreviews.add(filePreview);
-        filePreview.setEvent(this);
     }
 
     public void removeFilePreview(FilePreviewEntity filePreview) {
         filePreviews.remove(filePreview);
-        filePreview.setEvent(null);
     }
 
     public Instant getCreatedAt() {

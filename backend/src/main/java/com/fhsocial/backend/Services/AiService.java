@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fhsocial.backend.Brain.Brain;
 import com.fhsocial.backend.Brain.Request;
@@ -35,6 +36,7 @@ public class AiService {
         this.brain = brain;
     }
     
+    @Transactional
     public ResponseEntity<Map<String, String>> generateRecommendation(UUID eventId, UUID authenticatedUserId) {
         EventEntity event = eventRepository.findById(eventId).orElse(null);
         if(event == null) {
@@ -54,6 +56,7 @@ public class AiService {
         }
     }
 
+    @Transactional
     public ResponseEntity<Map<String, String>> generateTags(UUID eventId, UUID authenticatedUserId) {
         EventEntity event = eventRepository.findById(eventId).orElse(null);
         if(event == null) {
