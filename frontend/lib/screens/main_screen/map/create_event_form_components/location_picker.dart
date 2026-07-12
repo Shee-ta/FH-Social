@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:frontend/UI/constants.dart';
-import 'package:frontend/services/ui_feedback_service.dart';
 import 'package:latlong2/latlong.dart';
 
 class LocationPicker extends StatelessWidget {
@@ -52,12 +51,6 @@ class LocationPicker extends StatelessWidget {
           Navigator.of(context).pop();
         } else if (value == 'location') {
           final coordinates = await useLocationForEvent();
-          if (coordinates == null && context.mounted) {
-            UIfeedbackService.notification(
-              message: 'Location tracking is disabled. Please enable it to use your location for the event.',
-              type: NotificationType.error,
-            );
-          }
           setCoordinates(coordinates);
           setHasPickedLocation(coordinates != null);
         }

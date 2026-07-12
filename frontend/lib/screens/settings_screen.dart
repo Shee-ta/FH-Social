@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return DefaultTabController(
       length: 2,
       child: LayoutBuilder(
@@ -44,32 +45,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               actions: [
-                TextButton(
+                IconButton(
+                  icon: const Icon(Icons.map),
                   onPressed: () {
                     Navigator.pushNamed(context, MainScreen.routeName);
                   },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(0),
-                    ),
-                    foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            "Back to Main",
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                        const Icon(Icons.exit_to_app),
-                      ]
-                    ),
-                  )
+                  tooltip: 'Return to map',
                 ),
               ],
             ),

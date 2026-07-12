@@ -37,32 +37,36 @@ void createEventForm(
     required ValueChanged<bool> setPickingLocation,
   }
 ) {
+  final screenWidth = MediaQuery.of(context).size.width;
   final mediaQuery = MediaQuery.of(context);
   final appBarHeight = Scaffold.maybeOf(context)?.appBarMaxHeight ?? (kToolbarHeight + kTextTabBarHeight);
   final maxSheetHeight = mediaQuery.size.height - mediaQuery.padding.top - appBarHeight;
 
   showModalBottomSheet(
     context: context,
+    useSafeArea: true,
     showDragHandle: true,
     isScrollControlled: true,
-    constraints: BoxConstraints(
+    constraints: screenWidth > 600 ? BoxConstraints(
       maxHeight: maxSheetHeight - 10,
       maxWidth: Const.modalWidth,
-    ),
-    builder: (_) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    ) : null,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: CreateEventForm(
+          draft: draft,
+          useLocationForEvent: useLocationForEvent,
+          events: events,
+          draftReset: draftReset,
+          hasPickedLocation: hasPickedLocation,
+          setHasPickedLocation: setHasPickedLocation,
+          setUsingCustomLocation: setUsingCustomLocation,
+          setPickingLocation: setPickingLocation,
+        )
       ),
-      child: CreateEventForm(
-        draft: draft,
-        useLocationForEvent: useLocationForEvent,
-        events: events,
-        draftReset: draftReset,
-        hasPickedLocation: hasPickedLocation,
-        setHasPickedLocation: setHasPickedLocation,
-        setUsingCustomLocation: setUsingCustomLocation,
-        setPickingLocation: setPickingLocation,
-      )
     ),
   );
 }
@@ -300,7 +304,7 @@ class _CreateEventFormState extends State<CreateEventForm> {
 
   @override
   Widget build(BuildContext context) {
-    return  StatefulBuilder(
+    return StatefulBuilder(
       builder: (context, setState) {
         final colorScheme = Theme.of(context).colorScheme;
         final hasDateTimeError = showDateTimeError 

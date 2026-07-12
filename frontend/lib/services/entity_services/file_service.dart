@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:frontend/dto/file_preview_dto.dart';
 import 'package:frontend/services/connection_services/http_retry.dart';
+import 'package:frontend/services/ui_feedback_service.dart';
 import 'package:http/http.dart' as http;
 
 class FileService {
@@ -103,10 +104,36 @@ class FileService {
       return false;
     }
 
-    await FileSaver.instance.saveFile(
-      name: fileName,
-      bytes: response.bodyBytes,
-    );
-    return true;
+    debugPrint(response.statusCode.toString());
+    debugPrint(response.headers['content-type']);
+    debugPrint(response.bodyBytes.length.toString());
+    try {
+      final savedPath = await FileSaver.instance.saveAs(
+        name: fileName,
+        bytes: response.bodyBytes,
+        mimeType: MimeType.custom,
+        customMimeType: response.headers['content-type'] ?? 'application/octet-stream',
+      );
+      if (savedPath == null || savedPath.isEmpty) {
+        UIfeedbackService.notification(
+          message: 'Failed to save file.',
+          type: NotificationType.error,
+        );
+        return false;
+      }
+      debugPrint('File saved to: $savedPath');
+      UIfeedbackService.notification(
+        message: 'File downloaded successfully.',
+        type: NotificationType.success,
+      );
+      return true;
+    } catch (e, s) {
+      UIfeedbackService.notification(
+      message: "Nuuu", 
+      type: NotificationType.error);
+      debugPrint(e.toString());
+      debugPrint(s.toString());
+      return false;
+    }
   }
 }

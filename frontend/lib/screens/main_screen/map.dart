@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:frontend/controller/auth_controller.dart';
@@ -15,6 +16,7 @@ import 'package:frontend/entity/event.dart';
 import 'package:frontend/screens/main_screen/map/event_popup_components/event_popup_comment_input.dart';
 import 'package:frontend/screens/main_screen/map/map_buttons.dart';
 import 'package:frontend/screens/main_screen/map/tile_layer.dart';
+import 'package:frontend/services/ui_feedback_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -114,52 +116,45 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
     });
   }
 
-  Future<bool> hasPermission() async {
-    final permission = await Geolocator.checkPermission();
-    return permission != LocationPermission.denied &&
-        permission != LocationPermission.deniedForever &&
-        permission != LocationPermission.unableToDetermine &&
-        await Geolocator.isLocationServiceEnabled();
-  }
+  LocationSettings _getSettings() {
 
-  Future<bool> _requestLocationTracking() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled || !mounted) {
-      return false;
-    }
-
-    if (!await hasPermission()) {
-      await Geolocator.requestPermission();
-      if (!await hasPermission()) {
-        return false;
-      }
-    }
-
-    const settings = LocationSettings(accuracy: LocationAccuracy.best);
-
-    await _positionSubscription?.cancel();
-    _positionSubscription = Geolocator.getPositionStream(locationSettings: settings).listen(
-      (pos) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _currentLocation = LatLng(pos.latitude, pos.longitude);
-        });
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        debugPrint('Location stream error: $error');
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _currentLocation = null;
-        });
-      },
-      cancelOnError: false,
+    if (defaultTargetPlatform == TargetPlatform.android) {
+    return AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+        forceLocationManager: true,
+        intervalDuration: const Duration(seconds: 10),
+        //(Optional) Set foreground notification config to keep the app alive 
+        //when going to the background
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationText:
+          "Example app will continue to receive your location even when you aren't using it",
+          notificationTitle: "Running in Background",
+          enableWakeLock: true,
+        )
     );
-    return true;
+  } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
+    return AppleSettings(
+      accuracy: LocationAccuracy.high,
+      activityType: ActivityType.fitness,
+      distanceFilter: 5,
+      pauseLocationUpdatesAutomatically: true,
+      // Only set to true if our app will be started up in the background.
+      showBackgroundLocationIndicator: false,
+    );
+  } else if (kIsWeb) {
+    return WebSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+      maximumAge: Duration(minutes: 5),
+    );
+  } else {
+    return LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+    );
   }
+}
 
   void _createEvent({bool draftReset = false}) {
     createEventForm(
@@ -235,6 +230,94 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
     _createEvent();
   }
 
+  Future<bool> _requestLocationTracking() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (_currentLocation != null) {
+        setState(() {
+          _currentLocation = null;
+        });
+      }
+      await Geolocator.openLocationSettings();
+      return false;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        UIfeedbackService.notification(
+          message: "Please enable location permission", 
+          type: NotificationType.error);
+        if (_currentLocation != null) {
+          setState(() {
+            _currentLocation = null;
+          });
+        }
+        return false;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      UIfeedbackService.notification(
+        message: "Please enable location permission", 
+        type: NotificationType.error);
+      if (_currentLocation != null) {
+        setState(() {
+          _currentLocation = null;
+        });
+      }
+      return false;
+    } 
+
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      setState(() {
+        _currentLocation = LatLng(pos.latitude, pos.longitude);
+      });
+      _registerStream();
+      return true;
+
+    } catch (e) {
+      UIfeedbackService.notification(
+        message: "Failed to get location",
+        type: NotificationType.error
+      );
+      setState(() {
+        _currentLocation = null;
+      });
+      return false;
+    }
+  }
+
+  Future<void> _registerStream() async {
+    await _positionSubscription?.cancel();
+    _positionSubscription = Geolocator.getPositionStream(locationSettings: _getSettings()).listen(
+      (pos) {
+        if (!mounted) {
+          return;
+        }
+        final location = LatLng(pos.latitude, pos.longitude);
+        setState(() {
+          _currentLocation = location;
+        });
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _currentLocation = null;
+        });
+      },
+      cancelOnError: false,
+    );
+  }
+
   Future<LatLng?> _useLocationForEvent() async {
     if (!await _requestLocationTracking()) {
       setState(() {
@@ -243,17 +326,22 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
       });
       return null;
     }
-    final position = await Geolocator.getCurrentPosition();
 
-    final location = LatLng(position.latitude, position.longitude); 
+    if (mounted) {
+      setState(() {
+        _moveMapToLocation(_currentLocation!);
+      });
+    }
 
-  if (mounted) {
-    setState(() {
-      _currentLocation = location;
-    });
+    return _currentLocation;
   }
 
-  return location;
+  void _moveMapToLocation(LatLng location) {
+    try {
+      _mapController.move(location, 18);
+    } catch (_) {
+      // The map controller may not be ready yet.
+    }
   }
 
   int get _interactionFlags {
@@ -310,75 +398,82 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        initialCenter: _initialCenter,
-        initialZoom: 18,
-        minZoom: 3,
-        maxZoom: 20,
-        interactionOptions: InteractionOptions(flags: _interactionFlags),
-        onTap: _handleMapTap,
-      ),
-      children: [
-        const MapTileLayer(),
-        if (_currentLocation != null)
-          CurrentLocationMarker(currentLocation: _currentLocation!),
-        if (widget.eventController.events.isNotEmpty)
-          EventMarkerLayer(
-            events: _filterByTags(widget.eventController.eventsGroupedByLocation),
-            toggleEventList: (events) => _toggleEventList(events),
-            commentDrafts: _commentDrafts,
-            setEventDraft: _setEventDraft,
-            createEvent: _createEvent,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        debugPrint(
+          'Map: ${constraints.maxWidth} x ${constraints.maxHeight}',
+        );
+        return FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: _initialCenter,
+            initialZoom: 18,
+            minZoom: 3,
+            maxZoom: 20,
+            interactionOptions: InteractionOptions(flags: _interactionFlags),
+            onTap: _handleMapTap,
           ),
-        if (_eventDraft.coordinates != null &&
-            _createEventController.hasPickedLocation)
-          EventDraftMarker(
-            coordinates: _eventDraft.coordinates!,
-            onCreateEvent: _createEvent,
-          ),
-        Align(
-          alignment: Alignment.bottomLeft,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 16,
-              children: [
-                EventPanelList(
-                  isShowingEventList: _isShowingEventList,
-                  eventPanelList: _filterByTagsFlat(_eventPanelList),
-                  commentDrafts: _commentDrafts,
-                  setFocus: (coords) => _mapController.move(coords, 21),
-                  onEventListHoverChanged: (isHovering) {
-                    if (_isHoveringEventList == isHovering || !mounted) {
-                      return;
-                    }
-                    setState(() {
-                      _isHoveringEventList = isHovering;
-                    });
-                  },
-                  setEventDraft: _setEventDraft,
-                  createEvent: _createEvent,
+          children: [
+            const MapTileLayer(),
+            if (_currentLocation != null)
+              CurrentLocationMarker(currentLocation: _currentLocation!),
+            if (widget.eventController.events.isNotEmpty)
+              EventMarkerLayer(
+                events: _filterByTags(widget.eventController.eventsGroupedByLocation),
+                toggleEventList: (events) => _toggleEventList(events),
+                commentDrafts: _commentDrafts,
+                setEventDraft: _setEventDraft,
+                createEvent: _createEvent,
+              ),
+            if (_eventDraft.coordinates != null &&
+                _createEventController.hasPickedLocation)
+              EventDraftMarker(
+                coordinates: _eventDraft.coordinates!,
+                onCreateEvent: _createEvent,
+              ),
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 16,
+                  children: [
+                    EventPanelList(
+                      isShowingEventList: _isShowingEventList,
+                      eventPanelList: _filterByTagsFlat(_eventPanelList),
+                      commentDrafts: _commentDrafts,
+                      setFocus: (coords) => _mapController.move(coords, 21),
+                      onEventListHoverChanged: (isHovering) {
+                        if (_isHoveringEventList == isHovering || !mounted) {
+                          return;
+                        }
+                        setState(() {
+                          _isHoveringEventList = isHovering;
+                        });
+                      },
+                      setEventDraft: _setEventDraft,
+                      createEvent: _createEvent,
+                    ),
+                    MapButtons(
+                      isShowingEventList: _isShowingEventList,
+                      filterByTags: _filterByTagsFlat,
+                      events: widget.eventController.events,
+                      availableTags: widget.eventController.tags,
+                      disabledTags: _disabledTags,
+                      addEvent: _createEvent,
+                      setTag: _setTag,
+                      toggleEventList: (events, {bool forceClose = false}) =>
+                          _toggleEventList(events, forceClose: forceClose),
+                    ),
+                  ],
                 ),
-                MapButtons(
-                  isShowingEventList: _isShowingEventList,
-                  filterByTags: _filterByTagsFlat,
-                  events: widget.eventController.events,
-                  availableTags: widget.eventController.tags,
-                  disabledTags: _disabledTags,
-                  addEvent: _createEvent,
-                  setTag: _setTag,
-                  toggleEventList: (events, {bool forceClose = false}) =>
-                      _toggleEventList(events, forceClose: forceClose),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:frontend/entity/event.dart';
 
@@ -22,6 +24,7 @@ class TagsSelector extends StatefulWidget {
 class _TagsSelectorState extends State<TagsSelector> {
   @override
   Widget build(BuildContext context) {
+    final screenWith = MediaQuery.of(context).size.width;
     return MenuAnchor(
       style: MenuStyle(
         padding: const WidgetStatePropertyAll(
@@ -37,7 +40,7 @@ class _TagsSelectorState extends State<TagsSelector> {
         Padding(
           padding: const EdgeInsets.all(0),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 400),
+            constraints: BoxConstraints(maxWidth: max(400, screenWith * 0.9), maxHeight: 400),
             child: SingleChildScrollView(
               child: Wrap(
                 spacing: 8,
@@ -46,7 +49,9 @@ class _TagsSelectorState extends State<TagsSelector> {
                   return FilterChip(
                     label: Padding(
                       padding: const EdgeInsets.all(4), 
-                      child: Text('${e.key} (${e.value})')),
+                      child: Text(
+                        '${e.key} (${e.value})',
+                        softWrap: true,)),
                     selected: !widget.disabledTags.contains(e.key),
                     onSelected: (selected) {
                       setState(() {

@@ -23,29 +23,31 @@ void eventPopup(
   void Function(EventDraft) setEventDraft,
   void Function() createEvent,
 ) {
-
+  final screenWidth = MediaQuery.of(context).size.width;
   final mediaQuery = MediaQuery.of(context);
   final appBarHeight = Scaffold.maybeOf(context)?.appBarMaxHeight ?? (kToolbarHeight + kTextTabBarHeight);
   final maxSheetHeight = mediaQuery.size.height - mediaQuery.padding.top - appBarHeight;
 
   showModalBottomSheet(
-    useSafeArea: true,
     context: context,
+    useSafeArea: true,
     showDragHandle: true,
     isScrollControlled: true,
-    constraints: BoxConstraints(
+    constraints: screenWidth > 600 ? BoxConstraints(
       maxHeight: maxSheetHeight - 10,
       maxWidth: Const.modalWidth,
-    ),
-    builder: (_) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: EventPopup(
-        event: event,
-        commentDrafts: commentDrafts,
-        setEventDraft: setEventDraft,
-        createEvent: createEvent,
+    ) : null,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: EventPopup(
+          event: event,
+          commentDrafts: commentDrafts,
+          setEventDraft: setEventDraft,
+          createEvent: createEvent,
+        ),
       ),
     ),
   );
