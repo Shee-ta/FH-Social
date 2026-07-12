@@ -87,14 +87,7 @@ class EventPopupFilePreview extends StatelessWidget {
                             });
                           }
                           if (value == 'download') {
-                            final success = await event.controller.downloadFile(file.id, file.fileName);
-                            if (success) {
-                              //TODO
-                              // UIfeedbackService.notification(
-                              //   message: 'Download started',
-                              //   type: NotificationType.success,
-                              // );
-                            }
+                            await event.controller.downloadFile(file.id, file.fileName);
                           }
                         },
                         child: const Icon(Icons.more_vert, size: 32),

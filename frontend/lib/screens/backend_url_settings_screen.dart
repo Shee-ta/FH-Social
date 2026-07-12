@@ -153,9 +153,11 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
-                    onPressed: _isSaving ? null : () {
-                      _save;
-                      Navigator.pushNamed(context, MainScreen.routeName);
+                    onPressed: _isSaving ? null : () async {
+                      await _save();
+                      if(context.mounted) {
+                        Navigator.pushNamed(context, MainScreen.routeName);
+                      }
                     },
                     icon: _isSaving
                         ? const SizedBox(

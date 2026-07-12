@@ -25,7 +25,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     return DefaultTabController(
       length: 2,
       initialIndex: SettingsScreen.index,

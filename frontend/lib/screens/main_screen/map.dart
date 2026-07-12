@@ -246,9 +246,6 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        UIfeedbackService.notification(
-          message: "Please enable location permission", 
-          type: NotificationType.error);
         if (_currentLocation != null) {
           setState(() {
             _currentLocation = null;
@@ -316,6 +313,9 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
 
   Future<LatLng?> _useLocationForEvent() async {
     if (!await _requestLocationTracking()) {
+      UIfeedbackService.notification(
+        message: "Please enable location permission", 
+        type: NotificationType.error);
       setState(() {
         _eventDraft.coordinates = null;
         _currentLocation = null;

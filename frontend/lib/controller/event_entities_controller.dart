@@ -258,14 +258,7 @@ class EventEntitiesController extends ChangeNotifier {
 
     final accessToken = await authService.getAccessToken();
     final success = await fileService.downloadFile(fileId, fileName, accessToken);
-
-    //TODO
-    // if(!success) {
-    //   UIfeedbackService.notification(
-    //     message: "Failed to download file",
-    //     type: NotificationType.error
-    //   );
-    // }
+    
     _setIsLoadingFiles(false);
     return success;
   }
