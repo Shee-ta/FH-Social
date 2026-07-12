@@ -40,7 +40,10 @@ class _TagsSelectorState extends State<TagsSelector> {
         Padding(
           padding: const EdgeInsets.all(0),
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: max(400, screenWith * 0.9), maxHeight: 400),
+            constraints: BoxConstraints(
+              maxWidth: min(400, screenWith * 0.9), 
+              maxHeight: 400
+            ),
             child: SingleChildScrollView(
               child: Wrap(
                 spacing: 8,

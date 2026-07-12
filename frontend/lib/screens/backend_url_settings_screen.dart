@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/di/app_di.dart';
 import 'package:frontend/environment/environment.dart';
+import 'package:frontend/screens/main_screen.dart';
 import 'package:frontend/services/backend_url_service.dart';
 import 'package:frontend/services/ui_feedback_service.dart';
 
@@ -106,6 +107,7 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Backend URL'),
       ),
       body: Center(
@@ -151,7 +153,10 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
-                    onPressed: _isSaving ? null : _save,
+                    onPressed: _isSaving ? null : () {
+                      _save;
+                      Navigator.pushNamed(context, MainScreen.routeName);
+                    },
                     icon: _isSaving
                         ? const SizedBox(
                             width: 16,

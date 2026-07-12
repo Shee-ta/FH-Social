@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     return DefaultTabController(
       length: 2,
+      initialIndex: SettingsScreen.index,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= _breakpoint;
