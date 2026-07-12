@@ -234,7 +234,6 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Test if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (_currentLocation != null) {
@@ -398,82 +397,75 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        debugPrint(
-          'Map: ${constraints.maxWidth} x ${constraints.maxHeight}',
-        );
-        return FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: _initialCenter,
-            initialZoom: 18,
-            minZoom: 3,
-            maxZoom: 20,
-            interactionOptions: InteractionOptions(flags: _interactionFlags),
-            onTap: _handleMapTap,
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: _initialCenter,
+        initialZoom: 18,
+        minZoom: 3,
+        maxZoom: 20,
+        interactionOptions: InteractionOptions(flags: _interactionFlags),
+        onTap: _handleMapTap,
+      ),
+      children: [
+        const MapTileLayer(),
+        if (_currentLocation != null)
+          CurrentLocationMarker(currentLocation: _currentLocation!),
+        if (widget.eventController.events.isNotEmpty)
+          EventMarkerLayer(
+            events: _filterByTags(widget.eventController.eventsGroupedByLocation),
+            toggleEventList: (events) => _toggleEventList(events),
+            commentDrafts: _commentDrafts,
+            setEventDraft: _setEventDraft,
+            createEvent: _createEvent,
           ),
-          children: [
-            const MapTileLayer(),
-            if (_currentLocation != null)
-              CurrentLocationMarker(currentLocation: _currentLocation!),
-            if (widget.eventController.events.isNotEmpty)
-              EventMarkerLayer(
-                events: _filterByTags(widget.eventController.eventsGroupedByLocation),
-                toggleEventList: (events) => _toggleEventList(events),
-                commentDrafts: _commentDrafts,
-                setEventDraft: _setEventDraft,
-                createEvent: _createEvent,
-              ),
-            if (_eventDraft.coordinates != null &&
-                _createEventController.hasPickedLocation)
-              EventDraftMarker(
-                coordinates: _eventDraft.coordinates!,
-                onCreateEvent: _createEvent,
-              ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 16,
-                  children: [
-                    EventPanelList(
-                      isShowingEventList: _isShowingEventList,
-                      eventPanelList: _filterByTagsFlat(_eventPanelList),
-                      commentDrafts: _commentDrafts,
-                      setFocus: (coords) => _mapController.move(coords, 21),
-                      onEventListHoverChanged: (isHovering) {
-                        if (_isHoveringEventList == isHovering || !mounted) {
-                          return;
-                        }
-                        setState(() {
-                          _isHoveringEventList = isHovering;
-                        });
-                      },
-                      setEventDraft: _setEventDraft,
-                      createEvent: _createEvent,
-                    ),
-                    MapButtons(
-                      isShowingEventList: _isShowingEventList,
-                      filterByTags: _filterByTagsFlat,
-                      events: widget.eventController.events,
-                      availableTags: widget.eventController.tags,
-                      disabledTags: _disabledTags,
-                      addEvent: _createEvent,
-                      setTag: _setTag,
-                      toggleEventList: (events, {bool forceClose = false}) =>
-                          _toggleEventList(events, forceClose: forceClose),
-                    ),
-                  ],
+        if (_eventDraft.coordinates != null &&
+            _createEventController.hasPickedLocation)
+          EventDraftMarker(
+            coordinates: _eventDraft.coordinates!,
+            onCreateEvent: _createEvent,
+          ),
+        Align(
+          alignment: Alignment.bottomLeft,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 16,
+              children: [
+                EventPanelList(
+                  isShowingEventList: _isShowingEventList,
+                  eventPanelList: _filterByTagsFlat(_eventPanelList),
+                  commentDrafts: _commentDrafts,
+                  setFocus: (coords) => _mapController.move(coords, 21),
+                  onEventListHoverChanged: (isHovering) {
+                    if (_isHoveringEventList == isHovering || !mounted) {
+                      return;
+                    }
+                    setState(() {
+                      _isHoveringEventList = isHovering;
+                    });
+                  },
+                  setEventDraft: _setEventDraft,
+                  createEvent: _createEvent,
                 ),
-              ),
+                MapButtons(
+                  isShowingEventList: _isShowingEventList,
+                  filterByTags: _filterByTagsFlat,
+                  events: widget.eventController.events,
+                  availableTags: widget.eventController.tags,
+                  disabledTags: _disabledTags,
+                  addEvent: _createEvent,
+                  setTag: _setTag,
+                  toggleEventList: (events, {bool forceClose = false}) =>
+                      _toggleEventList(events, forceClose: forceClose),
+                ),
+              ],
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }
