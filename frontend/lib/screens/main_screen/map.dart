@@ -124,8 +124,6 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
         distanceFilter: 5,
         forceLocationManager: true,
         intervalDuration: const Duration(seconds: 10),
-        //(Optional) Set foreground notification config to keep the app alive 
-        //when going to the background
         foregroundNotificationConfig: const ForegroundNotificationConfig(
           notificationText:
           "Example app will continue to receive your location even when you aren't using it",
@@ -139,7 +137,6 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
       activityType: ActivityType.fitness,
       distanceFilter: 5,
       pauseLocationUpdatesAutomatically: true,
-      // Only set to true if our app will be started up in the background.
       showBackgroundLocationIndicator: false,
     );
   } else if (kIsWeb) {
