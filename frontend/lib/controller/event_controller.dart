@@ -73,7 +73,7 @@ class EventController extends ChangeNotifier {
         removeEvent(IdDTO(id: event.id));
       }
     }
-    updateEvents();
+    _updateEvents();
     notifyListeners();
   }
 
@@ -120,7 +120,7 @@ class EventController extends ChangeNotifier {
   }
 
   // --- EVENT ASSEMBLY --- //
-  void updateEvents() {
+  void _updateEvents() {
     final Map<String, List<Event>> groupedEvents = {};
     for (final event in _events) {
       final key = '${event.latitude},${event.longitude}';
@@ -148,7 +148,7 @@ class EventController extends ChangeNotifier {
       final event = Event(eventDTO);
       _events.add(event);
     }
-    updateEvents();
+    _updateEvents();
     notifyListeners();
   }
 
@@ -159,7 +159,7 @@ class EventController extends ChangeNotifier {
     }
     _events[index].controller.setEventDeleted();
     _events.removeWhere((e) => e.id == idDTO.id);
-    updateEvents();
+    _updateEvents();
     notifyListeners();
   }
 
