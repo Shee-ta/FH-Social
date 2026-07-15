@@ -107,12 +107,12 @@ class _ChatbotTabState extends State<ChatbotTab>
       ..clear()
       ..add(_ChatMessage(
         fromBot: true,
-        text: 'Allgemeiner Modus. Ich suche dir Lerngruppen, Termine und Themen '
-            '(ohne KI, direkt aus der App).',
+        text: 'Allgemeiner Modus. Termine und Gruppen beantworte ich sofort aus '
+            'der App, offene Fragen per KI.',
         suggestions: const [
           'Was läuft heute?',
           'Welche Gruppen gibt es?',
-          'Hilfe',
+          'Erkläre mir binäre Suche',
         ],
       ));
     setState(() {});
@@ -168,14 +168,48 @@ class _ChatbotTabState extends State<ChatbotTab>
     }
   }
 
-  // --- General (local) --- //
-  void _sendGeneral(String raw) {
+  // --- General: instant local answers for app data, AI for the rest --- //
+  Future<void> _sendGeneral(String raw) async {
     final text = raw.trim();
     if (text.isEmpty) return;
     setState(() {
       _messages.add(_ChatMessage(text: text, fromBot: false));
-      _messages.add(_buildGeneralReply(text));
       _controller.clear();
+    });
+
+    // Fast, structured answers for questions the app can answer itself.
+    final local = _tryLocalReply(text);
+    if (local != null) {
+      setState(() => _messages.add(local));
+      _scrollToBottom();
+      return;
+    }
+
+    // Everything else goes to the AI (no document context in general mode).
+    setState(() => _messages.add(_ChatMessage(fromBot: true, loading: true)));
+    _scrollToBottom();
+
+    final token = await AppDI.instance.authService.getAccessToken();
+    final result = await widget.aiService.chat(text, const [], const [], token);
+
+    if (!mounted) return;
+    setState(() {
+      _messages.removeWhere((m) => m.loading);
+      if (result == null) {
+        _messages.add(_ChatMessage(
+          fromBot: true,
+          text: 'Die KI ist gerade nicht erreichbar. Läuft das Backend und ist '
+              'ein KI-Modell konfiguriert?',
+        ));
+      } else {
+        _messages.add(_ChatMessage(
+          fromBot: true,
+          text: result.answer.isEmpty
+              ? 'Ich habe dazu keine Antwort erhalten.'
+              : result.answer,
+          notes: result.notes,
+        ));
+      }
     });
     _scrollToBottom();
   }
@@ -230,37 +264,34 @@ class _ChatbotTabState extends State<ChatbotTab>
         start.day == day.day;
   }
 
-  _ChatMessage _buildGeneralReply(String input) {
+  /// Returns an instant local answer for questions the app can answer from its
+  /// own data (schedule, group lists). Returns null for everything else, so the
+  /// caller can forward the question to the AI.
+  _ChatMessage? _tryLocalReply(String input) {
     final q = input.toLowerCase();
     final events = widget.eventController.events;
 
-    if (_containsAny(q, ['hallo', 'hey', 'moin', 'servus']) || q == 'hi') {
-      return _ChatMessage(
-        fromBot: true,
-        text: 'Hi! Ich kenne aktuell '
-            '${events.length} Lerngruppe${events.length == 1 ? '' : 'n'}.',
-        suggestions: const ['Was läuft heute?', 'Welche Gruppen gibt es?'],
-      );
-    }
     if (_containsAny(q, ['hilfe', 'help', 'was kannst du', 'funktion'])) {
       return _ChatMessage(
         fromBot: true,
-        text: 'Im allgemeinen Modus finde ich Lerngruppen:\n'
-            '• „Was läuft heute?" oder „morgen"\n'
-            '• „Welche Gruppen gibt es?"\n'
-            '• ein Thema wie „Mathe" oder „Statistik"\n'
-            'Für inhaltliche Fragen zu Dokumenten: oben „Kontext wechseln" und '
+        text: 'Ich beantworte hier zweierlei:\n'
+            '• App-Fragen sofort – „Was läuft heute?", „morgen", „Welche Gruppen '
+            'gibt es?", ein Thema wie „Mathe".\n'
+            '• Alles andere per KI – stell einfach eine offene Frage.\n'
+            'Für Fragen zu den PDF-Dokumenten einer Gruppe: oben „Wechseln" und '
             'die KI zu einer Lerngruppe wählen.',
       );
     }
-    if (_containsAny(q, ['wie viele', 'wieviele', 'anzahl'])) {
+    if (_containsAny(q, ['wie viele', 'wieviele', 'anzahl']) &&
+        _containsAny(q, ['gruppe', 'lerngruppe', 'treffen'])) {
       return _ChatMessage(
         fromBot: true,
         text: 'Es gibt aktuell ${events.length} '
             'Lerngruppe${events.length == 1 ? '' : 'n'}.',
       );
     }
-    if (_containsAny(q, ['läuft', 'laeuft', 'jetzt', 'gerade', 'aktiv'])) {
+    if (_containsAny(q, ['läuft', 'laeuft', 'gerade', 'aktiv']) &&
+        _containsAny(q, ['gruppe', 'lerngruppe', 'treffen', 'jetzt'])) {
       final live = events
           .where((e) => studyGroupStatus(e).status == StudyGroupStatus.live)
           .toList();
@@ -285,31 +316,30 @@ class _ChatbotTabState extends State<ChatbotTab>
       return _resultMessage(list,
           list.isEmpty ? 'Morgen findet keine Lerngruppe statt.' : 'Morgen geplant:');
     }
-    if (_containsAny(q, ['alle', 'welche gruppen', 'liste', 'übersicht', 'uebersicht'])) {
+    if (_containsAny(q, ['alle gruppen', 'welche gruppen', 'gruppen liste',
+        'liste der gruppen', 'übersicht', 'uebersicht'])) {
       final list = List<Event>.from(events)
         ..sort((a, b) => _nextStart(a).compareTo(_nextStart(b)));
       return _resultMessage(list,
           list.isEmpty ? 'Es gibt noch keine Lerngruppen.' : 'Alle Lerngruppen:');
     }
 
-    final tokens = q.split(RegExp(r'\s+')).where((t) => t.length > 2).toList();
-    final matches = events.where((e) {
-      final haystack =
-          '${e.title} ${e.location} ${e.description} ${e.tags.join(' ')}'
-              .toLowerCase();
-      return tokens.any(haystack.contains) || haystack.contains(q);
-    }).toList()
-      ..sort((a, b) => _nextStart(a).compareTo(_nextStart(b)));
-
-    if (matches.isNotEmpty) {
-      return _resultMessage(matches, 'Das habe ich zu „$input" gefunden:');
+    // Short topic queries: try to match study groups; longer ones go to the AI.
+    final wordCount = q.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    if (wordCount <= 3) {
+      final tokens = q.split(RegExp(r'\s+')).where((t) => t.length > 2).toList();
+      final matches = events.where((e) {
+        final haystack =
+            '${e.title} ${e.location} ${e.tags.join(' ')}'.toLowerCase();
+        return tokens.any(haystack.contains);
+      }).toList()
+        ..sort((a, b) => _nextStart(a).compareTo(_nextStart(b)));
+      if (matches.isNotEmpty) {
+        return _resultMessage(matches, 'Das habe ich zu „$input" gefunden:');
+      }
     }
-    return _ChatMessage(
-      fromBot: true,
-      text: 'Dazu habe ich nichts gefunden. Frag mich nach einem Thema oder '
-          'z. B. „Was läuft heute?".',
-      suggestions: const ['Welche Gruppen gibt es?', 'Hilfe'],
-    );
+
+    return null;
   }
 
   _ChatMessage _resultMessage(List<Event> events, String text) =>
