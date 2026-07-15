@@ -23,7 +23,7 @@ class RepeatForDaysSwitch extends StatelessWidget {
           borderRadius: BorderRadius.circular(Const.textFieldRadius),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-        title: const Text('Repeat for days', softWrap: false),
+        title: const Text('Wöchentlich wiederholen', softWrap: false),
         value: repeatedForDays,
         onChanged: (value) {
           setSwitchToggle(value);

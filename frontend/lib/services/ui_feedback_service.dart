@@ -79,7 +79,7 @@ class UIfeedbackService {
 												TextButton(
 													onPressed: hideMessage,
 													child: Text(
-														'Dismiss',
+														'Schließen',
 														style: TextStyle(color: foregroundColor),
 													),
 												),

@@ -13,7 +13,7 @@ class CoordinatesLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Coordinates: ${draft.coordinates!.latitude}, ${draft.coordinates!.longitude}',
+      'Koordinaten: ${draft.coordinates!.latitude}, ${draft.coordinates!.longitude}',
       style: Theme.of(context).textTheme.bodyMedium,
     );
   }

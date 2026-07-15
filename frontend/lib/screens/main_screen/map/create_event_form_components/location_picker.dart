@@ -20,7 +20,7 @@ class LocationPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
-      tooltip: 'Click how to select location',
+      tooltip: 'Ort auswählen',
       borderRadius: BorderRadius.circular(Const.textFieldRadius),
       color: Theme.of(context).colorScheme.primaryContainer,
       itemBuilder: (context) => [
@@ -28,7 +28,7 @@ class LocationPicker extends StatelessWidget {
           value: 'pick',
           child: Row(
             children: [
-              const Text('Pick on map'),
+              const Text('Auf Karte wählen'),
               Const.spacing,
               const Icon(Icons.map),
             ],
@@ -38,7 +38,7 @@ class LocationPicker extends StatelessWidget {
           value: 'location',
           child: Row(
             children: [
-              const Text('Use location'),
+              const Text('Standort verwenden'),
               Const.spacing,
               const Icon(Icons.location_on),
             ],
@@ -62,7 +62,7 @@ class LocationPicker extends StatelessWidget {
             Icons.edit_location,
             size: 42,
           ),
-          const Text('Select location *'),
+          const Text('Ort wählen *'),
         ],
       ),
     );

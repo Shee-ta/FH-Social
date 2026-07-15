@@ -28,7 +28,7 @@ class TitleField extends StatelessWidget {
       ),
       validator: (title) {
         if (title == null || title.trim().isEmpty) {
-          return 'Please enter a title';
+          return 'Bitte einen Titel eingeben';
         }
         return null;
       },

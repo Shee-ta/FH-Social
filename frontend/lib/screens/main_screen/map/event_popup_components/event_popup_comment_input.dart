@@ -56,7 +56,7 @@ class EventPopupCommentInput extends StatelessWidget {
               maxLines: null,
               onChanged: (value) => setCommentDraft(value),
               decoration: const InputDecoration(
-                labelText: 'Add a comment',
+                labelText: 'Kommentar hinzufügen',
               ),
             ),
             Const.spacing,
@@ -84,7 +84,7 @@ class EventPopupCommentInput extends StatelessWidget {
                       if (settingsService.iconButtonsActive) ...[
                         const Icon(Icons.send),
                       ],
-                      const Text('Submit')
+                      const Text('Senden')
                     ],
                   ),
               ),
@@ -102,7 +102,7 @@ class EventPopupCommentInput extends StatelessWidget {
                     if (settingsService.iconButtonsActive) ...[
                       const Icon(Icons.clear),
                     ],
-                    const Text('Clear')
+                    const Text('Leeren')
                   ],
                 ),
               ),

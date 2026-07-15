@@ -42,7 +42,7 @@ class EventPopupUploadFile extends StatelessWidget {
           }
           if(result.files.any((file) => files.any((existingFile) => existingFile.fileName == file.name))) {
             UIfeedbackService.notification(
-              message: 'File with the same name already exists.',
+              message: 'Es existiert bereits eine Datei mit diesem Namen.',
               type: NotificationType.error,
             );
             return;
@@ -82,7 +82,7 @@ class EventPopupUploadFile extends StatelessWidget {
               Icon(Icons.upload_file),
               Const.spacing,
             ],
-            Text(screenWidth > 500 ? 'Upload file' : 'Upload'),
+            Text(screenWidth > 500 ? 'Datei hochladen' : 'Hochladen'),
           ],
         ),
       ),

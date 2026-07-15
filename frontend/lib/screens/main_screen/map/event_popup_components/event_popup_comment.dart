@@ -112,7 +112,7 @@ class _EventPopupCommentState extends State<EventPopupComment> {
               children: [
                 Text(
                   comment.creator.displayname.isEmpty
-                      ? 'Unknown user'
+                      ? 'Unbekannt'
                       : comment.creator.displayname,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
@@ -131,7 +131,7 @@ class _EventPopupCommentState extends State<EventPopupComment> {
                   Text(comment.content),
                   const SizedBox(height: 4),
                   Text(
-                    '${isEdited ? "Edited at: " : ""}${dateTime.date} ${dateTime.time}',
+                    '${isEdited ? "Bearbeitet: " : ""}${dateTime.date} ${dateTime.time}',
                     textAlign: TextAlign.right,
                     style: TextStyle(
                       fontSize: 12,
@@ -156,7 +156,7 @@ class _EventPopupCommentState extends State<EventPopupComment> {
                             if (widget.settingsService.iconButtonsActive) ...[
                               const Icon(Icons.cancel),
                             ],
-                            const Text('Cancel'),
+                            const Text('Abbrechen'),
                           ],
                         ),
                       ),
@@ -177,7 +177,7 @@ class _EventPopupCommentState extends State<EventPopupComment> {
                                   if (widget.settingsService.iconButtonsActive) ...[
                                     const Icon(Icons.check),
                                   ],
-                                  const Text('Save'),
+                                  const Text('Speichern'),
                                 ],
                               ),
                       ),
@@ -190,7 +190,7 @@ class _EventPopupCommentState extends State<EventPopupComment> {
           if (widget.authController.userId == comment.creator.id && !_isEditing) ...[
             const SizedBox(width: 8),
             PopupMenuButton<String>(
-              tooltip: 'Show comment options',
+              tooltip: 'Kommentaroptionen',
               color: Theme.of(context).colorScheme.primaryContainer,
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                 PopupMenuItem<String>(
@@ -202,7 +202,7 @@ class _EventPopupCommentState extends State<EventPopupComment> {
                       if (widget.settingsService.iconButtonsActive) ...[
                         const Icon(Icons.edit),
                       ],
-                      const Text('Edit'),
+                      const Text('Bearbeiten'),
                     ],
                   ),
                 ),
@@ -215,7 +215,7 @@ class _EventPopupCommentState extends State<EventPopupComment> {
                       if (widget.settingsService.iconButtonsActive) ...[
                         const Icon(Icons.delete),
                       ],
-                      const Text('Delete'),
+                      const Text('Löschen'),
                     ],
                   ),
                 ),

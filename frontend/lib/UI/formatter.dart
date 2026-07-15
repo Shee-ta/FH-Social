@@ -113,7 +113,7 @@ class Formatter {
     {bool rawDates = false}
   ) {
     if (iso8601String.isEmpty) {
-      return (date: 'Unknown date', time: '');
+      return (date: 'Unbekanntes Datum', time: '');
     }
     final parsed = DateTime.parse(iso8601String).toLocal();
     final now = DateTime.now();
@@ -126,11 +126,11 @@ class Formatter {
     final formattedTime = '$hours:$minutes';
 
     if (parsedDateOnly == today && !rawDates) {
-      return (date: 'Today', time: 'at $formattedTime');
+      return (date: 'Heute', time: 'um $formattedTime');
     }
 
     if (parsedDateOnly == yesterday && !rawDates) {
-      return (date: 'Yesterday', time: 'at $formattedTime');
+      return (date: 'Gestern', time: 'um $formattedTime');
     }
 
     final formattedDate = '${parsed.day}.${parsed.month}.${parsed.year}';
@@ -141,19 +141,19 @@ class Formatter {
     return days.map((day) {
       switch (day) {
         case 'Mo':
-          return 'Monday';
+          return 'Montag';
         case 'Tu':
-          return 'Tuesday';
+          return 'Dienstag';
         case 'We':
-          return 'Wednesday';
+          return 'Mittwoch';
         case 'Th':
-          return 'Thursday';
+          return 'Donnerstag';
         case 'Fr':
-          return 'Friday';
+          return 'Freitag';
         case 'Sa':
-          return 'Saturday';
+          return 'Samstag';
         case 'Su':
-          return 'Sunday';
+          return 'Sonntag';
         default:
           return day;
       }

@@ -33,7 +33,7 @@ class DateTimePickerRow extends StatelessWidget {
             label: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                draft.date == null ? 'Pick date *' : '${draft.date!.day.toString().padLeft(2, '0')}.${draft.date!.month.toString().padLeft(2, '0')}.${draft.date!.year}',
+                draft.date == null ? 'Datum wählen *' : '${draft.date!.day.toString().padLeft(2, '0')}.${draft.date!.month.toString().padLeft(2, '0')}.${draft.date!.year}',
               ),
             ),
             style: OutlinedButton.styleFrom(
@@ -70,7 +70,7 @@ class DateTimePickerRow extends StatelessWidget {
             label: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                draft.startTime == null ? 'Start time *' : draft.startTime!.format(context),
+                draft.startTime == null ? 'Startzeit *' : draft.startTime!.format(context),
               ),
             ),
             style: OutlinedButton.styleFrom(
@@ -113,7 +113,7 @@ class DateTimePickerRow extends StatelessWidget {
             label: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                draft.endTime == null ? 'End time' : draft.endTime!.format(context),
+                draft.endTime == null ? 'Endzeit' : draft.endTime!.format(context),
               ),
             ),
             style: OutlinedButton.styleFrom(

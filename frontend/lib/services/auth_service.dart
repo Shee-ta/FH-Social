@@ -56,7 +56,7 @@ class AuthService {
     await _tokenStorage.removeAccessToken();
     _accessToken = null;
     UIfeedbackService.notification(
-      message: 'Session expired. Please log in again.',
+      message: 'Sitzung abgelaufen. Bitte erneut anmelden.',
       type: NotificationType.error
     );
 

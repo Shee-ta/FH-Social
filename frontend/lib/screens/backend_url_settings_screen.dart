@@ -53,14 +53,14 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
       }
 
       UIfeedbackService.notification(
-        message: 'Backend URL updated to $normalized',
+        message: 'Backend-URL geändert auf $normalized',
         type: NotificationType.success,
       );
 
       Navigator.pop(context);
     } catch (_) {
       UIfeedbackService.notification(
-        message: 'Failed to update backend URL.',
+        message: 'Backend-URL konnte nicht geändert werden.',
         type: NotificationType.error,
       );
     } finally {
@@ -83,12 +83,12 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
       _urlController.text = fallback;
 
       UIfeedbackService.notification(
-        message: 'Backend URL reset to default.',
+        message: 'Backend-URL auf Standard zurückgesetzt.',
         type: NotificationType.success,
       );
     } catch (_) {
       UIfeedbackService.notification(
-        message: 'Failed to reset backend URL.',
+        message: 'Backend-URL konnte nicht zurückgesetzt werden.',
         type: NotificationType.error,
       );
     } finally {
@@ -111,7 +111,7 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
           tooltip: 'Zurück',
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text('Backend URL'),
+        title: const Text('Backend-URL'),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -124,7 +124,7 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Set the backend URL used by this app.\nExample: http://192.168.1.42:3000',
+                    'Lege die Backend-URL fest, die diese App verwendet.\nBeispiel: http://192.168.1.42:3000',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 16),
@@ -135,22 +135,22 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _save(),
                     decoration: const InputDecoration(
-                      labelText: 'Backend URL',
+                      labelText: 'Backend-URL',
                     ),
                     validator: (value) {
                       final input = value?.trim() ?? '';
                       if (input.isEmpty) {
-                        return 'Please enter a URL.';
+                        return 'Bitte eine URL eingeben.';
                       }
                       if (!BackendUrlService.isValid(input)) {
-                        return 'Use a valid http:// or https:// URL.';
+                        return 'Bitte eine gültige http:// oder https:// URL eingeben.';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Default: $defaultUrl',
+                    'Standard: $defaultUrl',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 20),
@@ -163,13 +163,13 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.save),
-                    label: const Text('Save and Apply'),
+                    label: const Text('Speichern & Übernehmen'),
                   ),
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: _isSaving ? null : _resetToDefault,
                     icon: const Icon(Icons.restore),
-                    label: const Text('Reset to Default'),
+                    label: const Text('Auf Standard zurücksetzen'),
                   ),
                 ],
               ),

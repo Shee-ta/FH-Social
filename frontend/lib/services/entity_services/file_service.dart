@@ -116,20 +116,20 @@ class FileService {
       );
       if (savedPath == null || savedPath.isEmpty) {
         UIfeedbackService.notification(
-          message: 'Failed to save file.',
+          message: 'Datei konnte nicht gespeichert werden.',
           type: NotificationType.error,
         );
         return false;
       }
       debugPrint('File saved to: $savedPath');
       UIfeedbackService.notification(
-        message: 'File downloaded successfully.',
+        message: 'Datei erfolgreich heruntergeladen.',
         type: NotificationType.success,
       );
       return true;
     } catch (e, s) {
       UIfeedbackService.notification(
-      message: "Nuuu", 
+      message: "Datei konnte nicht heruntergeladen werden.",
       type: NotificationType.error);
       debugPrint(e.toString());
       debugPrint(s.toString());

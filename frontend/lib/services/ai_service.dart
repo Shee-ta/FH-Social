@@ -50,6 +50,7 @@ class AiService {
     String prompt,
     List<String> eventIds,
     List<String> fileNames,
+    String conversationId,
     String? accessToken,
   ) async {
     final url = Uri.parse('$_baseUrl/ai/chat');
@@ -66,6 +67,7 @@ class AiService {
           'prompt': prompt,
           'eventIds': eventIds,
           'fileNames': fileNames,
+          'conversationId': conversationId,
         }),
       );
 

@@ -8,6 +8,7 @@ import 'package:frontend/screens/main_screen/map/event_popup_components/event_po
 import 'package:frontend/screens/main_screen/map/event_popup_components/event_popup_comment_input.dart';
 import 'package:frontend/screens/main_screen/study_groups/study_group_status.dart';
 import 'package:frontend/services/ai_service.dart';
+import 'package:uuid/uuid.dart';
 
 enum _Mode { none, general, ai }
 
@@ -64,6 +65,9 @@ class _ChatbotTabState extends State<ChatbotTab>
   final Set<String> _selectedEventIds = {};
   final Set<String> _selectedFileNames = {};
 
+  final _uuid = Uuid();
+  String _conversationId = '';
+
   @override
   bool get wantKeepAlive => true;
 
@@ -103,6 +107,7 @@ class _ChatbotTabState extends State<ChatbotTab>
 
   void _startGeneral() {
     _mode = _Mode.general;
+    _conversationId = _uuid.v4();
     _messages
       ..clear()
       ..add(_ChatMessage(
@@ -122,6 +127,7 @@ class _ChatbotTabState extends State<ChatbotTab>
   void _startAi() {
     if (_selectedEventIds.isEmpty) return;
     _mode = _Mode.ai;
+    _conversationId = _uuid.v4();
     _selectedFileNames.clear();
     // Load documents/members of the selected events for the file picker.
     for (final event in _selectedEvents) {
@@ -190,7 +196,8 @@ class _ChatbotTabState extends State<ChatbotTab>
     _scrollToBottom();
 
     final token = await AppDI.instance.authService.getAccessToken();
-    final result = await widget.aiService.chat(text, const [], const [], token);
+    final result =
+        await widget.aiService.chat(text, const [], const [], _conversationId, token);
 
     if (!mounted) return;
     setState(() {
@@ -230,6 +237,7 @@ class _ChatbotTabState extends State<ChatbotTab>
       text,
       _selectedEventIds.toList(),
       _selectedFileNames.toList(),
+      _conversationId,
       token,
     );
 

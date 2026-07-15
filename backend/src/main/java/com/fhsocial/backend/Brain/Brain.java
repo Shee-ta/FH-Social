@@ -9,6 +9,10 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +29,13 @@ public class Brain {
 
     private final ChatClient chatClient;
     private final EventRepository eventRepository;
-    
+
+    // Conversation memory for the chat assistant, keyed per conversationId.
+    private final ChatMemory chatMemory = MessageWindowChatMemory.builder()
+        .chatMemoryRepository(new InMemoryChatMemoryRepository())
+        .maxMessages(20)
+        .build();
+
     Logger logger = LoggerFactory.getLogger(Brain.class);
 
     private static String systemPrompt = """
@@ -108,27 +118,30 @@ public class Brain {
      * Free-form question answering over the provided (already pre-processed) files.
      * Does not modify or persist any entity. Returns the model answer, or null on failure.
      */
-    public String answerFileQuestion(List<FilePreviewEntity> files, String userPrompt) {
+    public String answerFileQuestion(String conversationId, List<FilePreviewEntity> files, String userPrompt) {
         try {
-            StringBuilder context = new StringBuilder(contextMap.get(Request.CHAT));
-            context.append("\n\n");
+            // Document context goes into the system message (not stored in memory);
+            // only the user's question and the assistant's reply are remembered.
+            StringBuilder systemContext = new StringBuilder(systemPrompt);
+            systemContext.append("\n\n").append(contextMap.get(Request.CHAT)).append("\n\n");
 
             if (files == null || files.isEmpty()) {
-                context.append("No document contents were provided. Answer generally and, if helpful, "
+                systemContext.append("No document contents were provided. Answer generally and, if helpful, "
                     + "point out that no documents were selected.\n\n");
             } else {
                 for (FilePreviewEntity file : files) {
-                    context.append("Document \"").append(file.getOriginalFileName()).append("\":\n");
-                    context.append(file.getPreprocessedContent()).append("\n\n");
+                    systemContext.append("Document \"").append(file.getOriginalFileName()).append("\":\n");
+                    systemContext.append(file.getPreprocessedContent()).append("\n\n");
                 }
             }
 
-            Flux<String> responseStream = getAnswerStream(context.toString(), userPrompt);
-
-            String response = responseStream
-                .filter(line -> line != null && !line.equals("[DONE]"))
-                .collect(Collectors.joining())
-                .block();
+            String response = chatClient.prompt()
+                .system(systemContext.toString())
+                .user(userPrompt)
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .call()
+                .content();
 
             return response == null ? "" : response.trim();
         } catch (Exception e) {

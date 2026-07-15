@@ -72,8 +72,8 @@ class EventPanelList extends StatelessWidget {
                         builder: (context, _) {
                           return ListTile(
                             title: Text(event.title),
-                            subtitle: Text('Location: ${event.location}'),
-                            trailing: isBeforeToday ? const Text('Past') : null,
+                            subtitle: Text('Ort: ${event.location}'),
+                            trailing: isBeforeToday ? const Text('Vorbei') : null,
                             onTap: () {
                               setFocus(LatLng(event.latitude, event.longitude));
                               eventPopup(

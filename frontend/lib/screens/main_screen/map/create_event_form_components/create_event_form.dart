@@ -326,7 +326,7 @@ class _CreateEventFormState extends State<CreateEventForm> {
                     Align(
                       alignment: Alignment.center,
                       child: Text(
-                        'Editing Existing Event',
+                        'Lerngruppe bearbeiten',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
@@ -392,13 +392,13 @@ class _CreateEventFormState extends State<CreateEventForm> {
                   if (hasDateTimeError) ...[
                     DateTimeError(
                       colorScheme: colorScheme,
-                      message: 'Please pick both date and start time.',
+                      message: 'Bitte Datum und Startzeit wählen.',
                     ),
                   ]
                   else if (showStartEndTimeMismatchError) ...[
                     DateTimeError(
                       colorScheme: colorScheme,
-                      message: 'End time cannot be before start time.',
+                      message: 'Die Endzeit darf nicht vor der Startzeit liegen.',
                     ),
                   ],
                   

@@ -25,7 +25,7 @@ class RecommendationField extends StatelessWidget {
           maxLines: null,
           maxLength: 300,
           decoration: InputDecoration(
-            labelText: 'Learning Recommendation',
+            labelText: 'Lerntipp',
             border: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(Const.textFieldRadius)),
             ),

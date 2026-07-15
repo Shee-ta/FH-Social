@@ -57,13 +57,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     if (reply == AuthReply.connectionError) {
       setState(() {
-        _errorText = 'An error occurred while trying to log in. Please try again later.';
+        _errorText = 'Beim Anmelden ist ein Fehler aufgetreten. Bitte versuche es später erneut.';
       });
       return;
     }
     if(reply == AuthReply.invalidCredentials) {
       setState(() {
-        _errorText = 'Invalid username or password';
+        _errorText = 'Benutzername oder Passwort ist falsch';
       });
       return;
     }
@@ -79,13 +79,13 @@ class _LoginScreenState extends State<LoginScreen> {
         return Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: false,
-            title: const Text('Log In'),
+            title: const Text('Anmelden'),
             actions: [
               IconButton(
                 onPressed: () {
                   Navigator.pushNamed(context, BackendUrlSettingsScreen.routeName);
                 },
-                tooltip: 'Backend URL',
+                tooltip: 'Backend-URL',
                 icon: const Icon(Icons.dns_outlined),
               ),
             ],
@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   (_) => false,
                 );
               },
-              tooltip: 'Return to main page',
+              tooltip: 'Zurück zur Startseite',
               icon: const Icon(Icons.arrow_back),
             ),
           ),
@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Welcome to FH Social',
+                        'Willkommen bei FH Social',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
@@ -123,12 +123,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         enabled: !isLoading,
                         textInputAction: TextInputAction.next,
                         decoration: const InputDecoration(
-                          labelText: 'Username',
+                          labelText: 'Benutzername',
                           prefixIcon: Icon(Icons.person_outline),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a username';
+                            return 'Bitte einen Benutzernamen eingeben';
                           }
                           return null;
                         },
@@ -140,12 +140,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: true,
                         onFieldSubmitted: (_) => _submitLogin(),
                         decoration: const InputDecoration(
-                          labelText: 'Password',
+                          labelText: 'Passwort',
                           prefixIcon: Icon(Icons.lock_outline),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter a password';
+                            return 'Bitte ein Passwort eingeben';
                           }
                           return null;
                         },
@@ -168,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 18,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text('Log In'),
+                            : const Text('Anmelden'),
                       ),
                       const SizedBox(height: 10),
                     ],

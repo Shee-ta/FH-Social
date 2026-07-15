@@ -73,7 +73,7 @@ class _MainScreenState extends State<MainScreen> {
                 SettingsScreen.index = 0;
                 Navigator.pushNamed(context, SettingsScreen.routeName);
               },
-              tooltip: 'Settings',
+              tooltip: 'Einstellungen',
             ),
             title: const Text('FH Social'),
             bottom: TabBar(
@@ -104,7 +104,7 @@ class _MainScreenState extends State<MainScreen> {
                   : authController.isLoggedIn
                       ? PopupMenuButton<String>(
                           color: scheme.primaryContainer,
-                          tooltip: 'Account',
+                          tooltip: 'Konto',
                           onSelected: (value) async {
                             if (value == 'Logout') {
                               await authController.logout();
@@ -126,7 +126,7 @@ class _MainScreenState extends State<MainScreen> {
                                   if (settingsService.iconButtonsActive) ...[
                                     const Icon(Icons.logout),
                                   ],
-                                  const Text('Logout'),
+                                  const Text('Abmelden'),
                                 ],
                               ),
                             ),
@@ -139,7 +139,7 @@ class _MainScreenState extends State<MainScreen> {
                                   if (settingsService.iconButtonsActive) ...[
                                     const Icon(Icons.settings),
                                   ],
-                                  const Text('Account Settings'),
+                                  const Text('Kontoeinstellungen'),
                                 ],
                               ),
                             ),
@@ -177,7 +177,7 @@ class _MainScreenState extends State<MainScreen> {
                               (_) => false,
                             );
                           },
-                          tooltip: 'Log in',
+                          tooltip: 'Anmelden',
                           icon: const Icon(Icons.login),
                         ),
             ],

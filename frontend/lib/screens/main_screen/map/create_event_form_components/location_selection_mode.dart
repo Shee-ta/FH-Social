@@ -27,7 +27,7 @@ class LocationSelectionMode extends StatelessWidget {
             children: [
               const Icon(Icons.location_on),
               Const.spacing,
-              const Text('Select place'),
+              const Text('Ort eingeben'),
             ],
           ),
         ),
@@ -37,7 +37,7 @@ class LocationSelectionMode extends StatelessWidget {
             children: [
               const Icon(Icons.map),
               Const.spacing,
-              const Text('Pick location'),
+              const Text('Ort wählen'),
             ],
           ),
         ),

@@ -22,7 +22,7 @@ class EventPopupAiButton extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     return Expanded(
       child: PopupMenuButton(
-        tooltip: 'Show AI tools',
+        tooltip: 'KI-Werkzeuge anzeigen',
         color: Theme.of(context).colorScheme.primaryContainer,
         itemBuilder: (BuildContext context) => <PopupMenuEntry>[
           PopupMenuItem(
@@ -34,7 +34,7 @@ class EventPopupAiButton extends StatelessWidget {
               children: [
                 Icon(Icons.recommend),
                 Const.spacing,
-                Text('Recommend learning technique'),
+                Text('Lerntipp empfehlen'),
               ]
             ),
           ),
@@ -47,7 +47,7 @@ class EventPopupAiButton extends StatelessWidget {
               children: [
                 Icon(Icons.tag),
                 Const.spacing,
-                Text('Generate tags'),
+                Text('Tags generieren'),
               ]
             ),
           ),
@@ -79,7 +79,7 @@ class EventPopupAiButton extends StatelessWidget {
                         Icon(Icons.auto_awesome_outlined, size: 18, color: colorScheme.onTertiaryContainer),
                         Const.spacing,
                       ],
-                      Text(screenWidth > 500 ? 'Ask AI' : 'AI', style: TextStyle(color: colorScheme.onTertiaryContainer)),
+                      Text(screenWidth > 500 ? 'KI fragen' : 'KI', style: TextStyle(color: colorScheme.onTertiaryContainer)),
                     ],
                   ),
               ),

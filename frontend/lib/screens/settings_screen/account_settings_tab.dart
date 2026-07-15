@@ -84,7 +84,7 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
             Navigator.pushNamed(context, BackendUrlSettingsScreen.routeName);
           },
           icon: const Icon(Icons.dns_outlined),
-          label: const Text('Backend URL'),
+          label: const Text('Backend-URL'),
         ),
         const SizedBox(height: 10),
         if (authController.isLoggedIn)
@@ -96,7 +96,7 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
               if (!context.mounted) return;
               Navigator.pushReplacementNamed(context, LoginScreen.routeName);
             },
-            label: const Text('Logout'),
+            label: const Text('Abmelden'),
           ),
       ],
     );
@@ -257,7 +257,7 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
               onPressed: () {
                 Navigator.pushReplacementNamed(context, LoginScreen.routeName);
               },
-              label: const Text('Zum Login'),
+              label: const Text('Zur Anmeldung'),
             ),
           ],
         ),

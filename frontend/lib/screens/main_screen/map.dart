@@ -126,8 +126,8 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
         intervalDuration: const Duration(seconds: 10),
         foregroundNotificationConfig: const ForegroundNotificationConfig(
           notificationText:
-          "Example app will continue to receive your location even when you aren't using it",
-          notificationTitle: "Running in Background",
+          "FH Social empfängt weiterhin deinen Standort, auch wenn du die App nicht nutzt",
+          notificationTitle: "Läuft im Hintergrund",
           enableWakeLock: true,
         )
     );
@@ -257,7 +257,7 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
     
     if (permission == LocationPermission.deniedForever) {
       UIfeedbackService.notification(
-        message: "Please enable location permission", 
+        message: "Bitte Standortfreigabe aktivieren", 
         type: NotificationType.error);
       if (_currentLocation != null) {
         setState(() {
@@ -277,7 +277,7 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
 
     } catch (e) {
       UIfeedbackService.notification(
-        message: "Failed to get location",
+        message: "Standort konnte nicht ermittelt werden",
         type: NotificationType.error
       );
       setState(() {
@@ -314,7 +314,7 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
   Future<LatLng?> _useLocationForEvent() async {
     if (!await _requestLocationTracking()) {
       UIfeedbackService.notification(
-        message: "Please enable location permission", 
+        message: "Bitte Standortfreigabe aktivieren", 
         type: NotificationType.error);
       setState(() {
         _eventDraft.coordinates = null;

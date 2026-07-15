@@ -23,7 +23,7 @@ class EventPopupMembers extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: PopupMenuButton<User>(
           color: Theme.of(context).colorScheme.primaryContainer,
-          tooltip: 'Show all members',
+          tooltip: 'Alle Mitglieder anzeigen',
           itemBuilder: (context) => [
             ...members.map((user) => PopupMenuItem(
               value: user,

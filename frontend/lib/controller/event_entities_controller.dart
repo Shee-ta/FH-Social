@@ -295,7 +295,7 @@ class EventEntitiesController extends ChangeNotifier {
         );
       }
       UIfeedbackService.notification(
-        message: "Failed to change event membership",
+        message: "Mitgliedschaft konnte nicht geändert werden",
         type: NotificationType.error
       );
     }
@@ -340,7 +340,7 @@ class EventEntitiesController extends ChangeNotifier {
 
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to upload comment",
+        message: "Kommentar konnte nicht gesendet werden",
         type: NotificationType.error
       );
     }
@@ -356,7 +356,7 @@ class EventEntitiesController extends ChangeNotifier {
 
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to delete comment",
+        message: "Kommentar konnte nicht gelöscht werden",
         type: NotificationType.error
       );
     }
@@ -372,7 +372,7 @@ class EventEntitiesController extends ChangeNotifier {
 
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to upload file",
+        message: "Datei konnte nicht hochgeladen werden",
         type: NotificationType.error
       );
     }
@@ -387,7 +387,7 @@ class EventEntitiesController extends ChangeNotifier {
 
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to delete file",
+        message: "Datei konnte nicht gelöscht werden",
         type: NotificationType.error
       );
     }
@@ -403,7 +403,7 @@ class EventEntitiesController extends ChangeNotifier {
 
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to generate recommendation",
+        message: "Lerntipp konnte nicht erstellt werden",
         type: NotificationType.error
       );
     }
@@ -418,7 +418,7 @@ class EventEntitiesController extends ChangeNotifier {
 
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to generate tags",
+        message: "Tags konnten nicht erstellt werden",
         type: NotificationType.error
       );
     }

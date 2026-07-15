@@ -28,7 +28,7 @@ class EventPopupInfo extends StatelessWidget {
             Align(
               alignment: Alignment.topRight,
               child: Text(
-                'Hosted by ${event.creator.displayname.isEmpty ? 'Unknown user' : event.creator.displayname}',
+                'Erstellt von ${event.creator.displayname.isEmpty ? 'Unbekannt' : event.creator.displayname}',
                 textAlign: TextAlign.right,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
@@ -38,22 +38,22 @@ class EventPopupInfo extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge,
             ),
 
-            Text('Location: ${event.location}'),
+            Text('Ort: ${event.location}'),
 
-            Text('Time: ${Formatter.deserialiseDateTime(event.iso8601startDateTime, rawDates: true).time}' 
+            Text('Zeit: ${Formatter.deserialiseDateTime(event.iso8601startDateTime, rawDates: true).time}'
               ' ${event.iso8601endDateTime.isEmpty ? '' : '- ${Formatter.deserialiseDateTime(event.iso8601endDateTime, rawDates: true).time}'}' ),
 
             if(event.days.isEmpty) ...[
-              Text('Date: ${event.date}'),
+              Text('Datum: ${event.date}'),
             ]
             else ...[
-              Text('Next date: ${
+              Text('Nächster Termin: ${
                 Formatter.deserialiseDateTime(
                 Formatter.calculateNextIso8601(
                   event.iso8601startDateTime,
                   event.days)).date
               }'),
-              Text('Repeats on: ${Formatter.deserialiseDays(event.days).join(', ')}'),
+              Text('Wiederholt sich: ${Formatter.deserialiseDays(event.days).join(', ')}'),
             ],
             if (event.description.isNotEmpty) ...[
               Divider(),

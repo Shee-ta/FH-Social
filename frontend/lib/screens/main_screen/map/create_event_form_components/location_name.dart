@@ -19,7 +19,7 @@ class LocationNameField extends StatelessWidget {
       controller: locationController,
       onChanged: (value) => draft.location = value,
       decoration: const InputDecoration(
-        labelText: 'Location name *',
+        labelText: 'Ortsname *',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(
             Radius.circular(Const.textFieldRadius),
@@ -30,11 +30,11 @@ class LocationNameField extends StatelessWidget {
         final isLocationNameEmpty = locationName == null || locationName.trim().isEmpty;
         final isCoordinatesEmpty = draft.coordinates == null;
         if (isLocationNameEmpty && isCoordinatesEmpty) {
-          return 'Please enter location name and pick a location';
+          return 'Bitte einen Ortsnamen eingeben und einen Ort wählen';
         } else if (isCoordinatesEmpty) {
-          return 'Please pick a location on the map or use your current location';
+          return 'Bitte einen Ort auf der Karte wählen oder deinen aktuellen Standort verwenden';
         } else if (isLocationNameEmpty) {
-          return 'Please enter a location name';
+          return 'Bitte einen Ortsnamen eingeben';
         }
         return null;
       },

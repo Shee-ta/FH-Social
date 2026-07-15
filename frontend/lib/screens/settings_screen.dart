@@ -35,13 +35,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return Scaffold(
             appBar: AppBar(
               automaticallyImplyLeading: false,
-              title: const Text('Settings'),
+              title: const Text('Einstellungen'),
               bottom: isWide
               ? null
               : const TabBar(
                   tabs: [
-                    Tab(text: 'General'),
-                    Tab(text: 'Account'),
+                    Tab(text: 'Allgemein'),
+                    Tab(text: 'Konto'),
                   ],
                 ),
               actions: [
@@ -50,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () {
                     Navigator.pushNamed(context, MainScreen.routeName);
                   },
-                  tooltip: 'Return to map',
+                  tooltip: 'Zurück zur Karte',
                 ),
               ],
             ),
@@ -66,11 +66,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   destinations: const [
                     NavigationRailDestination(
                       icon: Icon(Icons.brush_outlined),
-                      label: Text('Appearance'),
+                      label: Text('Darstellung'),
                     ),
                     NavigationRailDestination(
                       icon: Icon(Icons.person),
-                      label: Text('Account'),
+                      label: Text('Konto'),
                     ),
                   ],
                 ),

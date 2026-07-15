@@ -98,6 +98,12 @@ public class AiService {
             return ResponseEntity.badRequest().body(Map.of("error", "Prompt is required"));
         }
 
+        JsonNode conversationNode = body.get("conversationId");
+        String conversationId =
+            conversationNode != null && !conversationNode.asString().isBlank()
+                ? conversationNode.asString().trim()
+                : UUID.randomUUID().toString();
+
         List<UUID> eventIds = parseUuidArray(body, "eventIds");
         List<String> requestedFileNames = parseStringArray(body, "fileNames");
 
@@ -140,7 +146,7 @@ public class AiService {
             }
         }
 
-        String answer = brain.answerFileQuestion(targetFiles, prompt);
+        String answer = brain.answerFileQuestion(conversationId, targetFiles, prompt);
         if (answer == null) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to generate answer"));
         }

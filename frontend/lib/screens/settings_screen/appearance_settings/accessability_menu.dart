@@ -26,8 +26,8 @@ class AccessabilityMenu extends StatelessWidget {
                 ),
                 tileColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 style: ListTileStyle.drawer,
-                title: Text('Icon Buttons'),
-                subtitle: Text('If enabled, buttons will use icons.'),
+                title: Text('Symbol-Schaltflächen'),
+                subtitle: Text('Wenn aktiviert, zeigen Schaltflächen Symbole.'),
                 leading: Icon(Icons.radio_button_checked),
                 trailing: Switch(
                   value: settingsService.iconButtonsActive,

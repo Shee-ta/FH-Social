@@ -60,7 +60,7 @@ class ActionButtons extends StatelessWidget {
                         if (settingsService.iconButtonsActive) ...[
                           Icon(isEditingExistingEvent ? Icons.edit : Icons.send),
                         ],
-                        Text(isEditingExistingEvent ? 'Update' : 'Send')
+                        Text(isEditingExistingEvent ? 'Aktualisieren' : 'Erstellen')
                       ],
                   ),
                 ),
@@ -80,7 +80,7 @@ class ActionButtons extends StatelessWidget {
                       if (settingsService.iconButtonsActive) ...[
                         const Icon(Icons.cancel),
                       ],
-                      const Text('Cancel')
+                      const Text('Abbrechen')
                     ],
                   ),
                 ),

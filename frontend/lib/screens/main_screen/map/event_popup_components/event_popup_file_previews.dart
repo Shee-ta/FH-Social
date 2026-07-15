@@ -31,7 +31,7 @@ class EventPopupFilePreview extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Files'),
+              title: const Text('Dateien'),
               content: SizedBox(
                 width: 400,
                 child: ListView.builder(
@@ -49,7 +49,7 @@ class EventPopupFilePreview extends StatelessWidget {
                       ),
                       trailing: PopupMenuButton(
                         color: Theme.of(context).colorScheme.primaryContainer,
-                        tooltip: 'Options',
+                        tooltip: 'Optionen',
                         itemBuilder: (context) => [
                           const PopupMenuItem(
                             value: 'download',
@@ -57,7 +57,7 @@ class EventPopupFilePreview extends StatelessWidget {
                               children: [
                                 Icon(Icons.download),
                                 Const.spacing,
-                                Text('Download'),
+                                Text('Herunterladen'),
                               ],
                             ),
                           ),
@@ -68,7 +68,7 @@ class EventPopupFilePreview extends StatelessWidget {
                               children: [
                                 Icon(Icons.delete),
                                 Const.spacing,
-                                Text('Delete'),
+                                Text('Löschen'),
                               ],
                             ),
                           ),
@@ -100,7 +100,7 @@ class EventPopupFilePreview extends StatelessWidget {
                 TextButton(
                   onPressed: () =>
                       Navigator.of(context).pop(),
-                  child: const Text('Close'),
+                  child: const Text('Schließen'),
                 ),
               ],
             );
@@ -118,7 +118,7 @@ class EventPopupFilePreview extends StatelessWidget {
         style: settingsService.neutralButtonStyle(context),
         onPressed: files.isEmpty ? null : () => _showFilesDialog(context),
         child: files.isEmpty
-        ? const Text('No files')
+        ? const Text('Keine Dateien')
         : Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -128,8 +128,8 @@ class EventPopupFilePreview extends StatelessWidget {
             ],
             Text(
               files.length > 1
-              ? '${files.length} files'
-              : '1 file',
+              ? '${files.length} Dateien'
+              : '1 Datei',
             ),
           ],
         ),

@@ -25,7 +25,7 @@ class DescriptionField extends StatelessWidget {
           maxLines: null,
           maxLength: 2000,
           decoration: InputDecoration(
-            labelText: 'Description',
+            labelText: 'Beschreibung',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(Const.textFieldRadius)),
             ),

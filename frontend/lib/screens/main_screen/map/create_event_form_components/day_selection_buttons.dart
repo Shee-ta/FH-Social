@@ -24,7 +24,7 @@ class DaySelectionButtons extends StatelessWidget {
         onPressed(index);
       },
       children: [
-        for (final day in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'])
+        for (final day in ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'])
           Padding(
             padding: EdgeInsets.symmetric(horizontal: padding),
             child: Text(day),

@@ -42,7 +42,7 @@ class EventPopupJoinButton extends StatelessWidget {
                   if (settingsService.iconButtonsActive) ...[
                     Icon(isMember ? Icons.transit_enterexit_outlined : Icons.add),
                   ],
-                  Text(isMember ? 'Leave' : 'Join')
+                  Text(isMember ? 'Verlassen' : 'Beitreten')
                 ],
               ),
           ),

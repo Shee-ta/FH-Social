@@ -30,7 +30,7 @@ class EventPopupEdit extends StatelessWidget {
             children: [
               const Icon(Icons.edit, size: 22),
               Const.spacing,
-              const Text('Edit'),
+              const Text('Bearbeiten'),
             ]
           ),
         ),

@@ -123,7 +123,7 @@ class EventController extends ChangeNotifier {
 
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to upload event",
+        message: "Lerngruppe konnte nicht gespeichert werden",
         type: NotificationType.error
       );
     }
@@ -138,7 +138,7 @@ class EventController extends ChangeNotifier {
     final success = await eventService.deleteEvent(eventId, accessToken);
     if(!success) {
       UIfeedbackService.notification(
-        message: "Failed to delete event",
+        message: "Lerngruppe konnte nicht gelöscht werden",
         type: NotificationType.error
       );
     }
