@@ -90,10 +90,51 @@ public class Brain {
             contextMap.get(Request.DEFAULT_CONTEXT) + """
             Explain the task in this file and consider the input of the user if given: 
             """);
-        contextMap.put(Request.TASK, 
+        contextMap.put(Request.TASK,
             contextMap.get(Request.DEFAULT_CONTEXT) + """
-            Generate a task that is similar to the one in the file and consider the input of the user if given: 
+            Generate a task that is similar to the one in the file and consider the input of the user if given:
             """);
+        contextMap.put(Request.CHAT, """
+            You are a study assistant for the app FH Social. Answer the user's question using the
+            provided document contents and event data below. The documents are OCR/extracted text of
+            PDF learning materials. If the answer is not contained in the provided material, say so
+            briefly instead of inventing facts. Answer in the same language as the user's question
+            (German if the question is in German). Be concise, clear and helpful. Do not mention that
+            you received the text as context.
+            """);
+    }
+
+    /**
+     * Free-form question answering over the provided (already pre-processed) files.
+     * Does not modify or persist any entity. Returns the model answer, or null on failure.
+     */
+    public String answerFileQuestion(List<FilePreviewEntity> files, String userPrompt) {
+        try {
+            StringBuilder context = new StringBuilder(contextMap.get(Request.CHAT));
+            context.append("\n\n");
+
+            if (files == null || files.isEmpty()) {
+                context.append("No document contents were provided. Answer generally and, if helpful, "
+                    + "point out that no documents were selected.\n\n");
+            } else {
+                for (FilePreviewEntity file : files) {
+                    context.append("Document \"").append(file.getOriginalFileName()).append("\":\n");
+                    context.append(file.getPreprocessedContent()).append("\n\n");
+                }
+            }
+
+            Flux<String> responseStream = getAnswerStream(context.toString(), userPrompt);
+
+            String response = responseStream
+                .filter(line -> line != null && !line.equals("[DONE]"))
+                .collect(Collectors.joining())
+                .block();
+
+            return response == null ? "" : response.trim();
+        } catch (Exception e) {
+            logger.warn("Error while answering file question", e);
+            return null;
+        }
     }
 
     @Transactional

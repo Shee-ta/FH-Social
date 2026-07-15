@@ -7,26 +7,32 @@ import 'package:frontend/entity/event.dart';
 import 'package:frontend/screens/main_screen/map/event_popup_components/event_popup.dart';
 import 'package:frontend/screens/main_screen/map/event_popup_components/event_popup_comment_input.dart';
 import 'package:frontend/screens/main_screen/study_groups/study_group_status.dart';
+import 'package:frontend/services/ai_service.dart';
+
+enum _Mode { none, general, ai }
 
 class _ChatMessage {
   final String text;
   final bool fromBot;
+  final bool loading;
+  final String notes;
   final List<Event> results;
   final List<String> suggestions;
 
   _ChatMessage({
-    required this.text,
     required this.fromBot,
+    this.text = '',
+    this.loading = false,
+    this.notes = '',
     this.results = const [],
     this.suggestions = const [],
   });
 }
 
-/// On-device assistant. Before chatting the user picks a context: a general
-/// question, or one of the study groups they belong to. When a group is chosen
-/// its full data is loaded and turned into a text context (a "toString") that
-/// the assistant answers from — the exact payload a real LLM (Gemini/Ollama)
-/// would receive once a chat endpoint exists.
+/// Assistant with two modes:
+/// - general: on-device rule-based helper over the loaded study groups.
+/// - ai: real generative answers via the backend (/ai/chat), using the OCR
+///   text of the selected groups' PDF documents.
 class ChatbotTab extends StatefulWidget {
   ChatbotTab({
     super.key,
@@ -34,10 +40,12 @@ class ChatbotTab extends StatefulWidget {
     required this.setEventDraft,
     required this.createEvent,
   })  : eventController = AppDI.instance.eventController,
-        authController = AppDI.instance.authController;
+        authController = AppDI.instance.authController,
+        aiService = AppDI.instance.aiService;
 
   final EventController eventController;
   final AuthController authController;
+  final AiService aiService;
   final List<CommentDraft> commentDrafts;
   final void Function(EventDraft) setEventDraft;
   final void Function() createEvent;
@@ -52,8 +60,9 @@ class _ChatbotTabState extends State<ChatbotTab>
   final _scrollController = ScrollController();
   final List<_ChatMessage> _messages = [];
 
-  bool _started = false;
-  Event? _contextEvent;
+  _Mode _mode = _Mode.none;
+  final Set<String> _selectedEventIds = {};
+  final Set<String> _selectedFileNames = {};
 
   @override
   bool get wantKeepAlive => true;
@@ -69,7 +78,6 @@ class _ChatbotTabState extends State<ChatbotTab>
   void dispose() {
     widget.eventController.removeListener(_onChanged);
     widget.authController.removeListener(_onChanged);
-    _contextEvent?.controller.removeListener(_onChanged);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -89,52 +97,54 @@ class _ChatbotTabState extends State<ChatbotTab>
       ..sort((a, b) => studyGroupSortKey(a).compareTo(studyGroupSortKey(b)));
   }
 
-  void _startChat(Event? event) {
-    _contextEvent?.controller.removeListener(_onChanged);
-    _contextEvent = event;
-    _messages.clear();
+  List<Event> get _selectedEvents => widget.eventController.events
+      .where((e) => _selectedEventIds.contains(e.id))
+      .toList();
 
-    if (event == null) {
-      _messages.add(
-        _ChatMessage(
-          fromBot: true,
-          text: 'Allgemeiner Modus. Frag mich nach Lerngruppen, Themen oder '
-              'Terminen.',
-          suggestions: const [
-            'Was läuft heute?',
-            'Welche Gruppen gibt es?',
-            'Hilfe',
-          ],
-        ),
-      );
-    } else {
-      event.controller.addListener(_onChanged);
+  void _startGeneral() {
+    _mode = _Mode.general;
+    _messages
+      ..clear()
+      ..add(_ChatMessage(
+        fromBot: true,
+        text: 'Allgemeiner Modus. Ich suche dir Lerngruppen, Termine und Themen '
+            '(ohne KI, direkt aus der App).',
+        suggestions: const [
+          'Was läuft heute?',
+          'Welche Gruppen gibt es?',
+          'Hilfe',
+        ],
+      ));
+    setState(() {});
+    _scrollToBottom();
+  }
+
+  void _startAi() {
+    if (_selectedEventIds.isEmpty) return;
+    _mode = _Mode.ai;
+    _selectedFileNames.clear();
+    // Load documents/members of the selected events for the file picker.
+    for (final event in _selectedEvents) {
       event.controller.fetchEventEntities(event.id);
-      _messages.add(
-        _ChatMessage(
-          fromBot: true,
-          text: 'Kontext gesetzt: „${event.title}". Ich kenne jetzt Ort, Zeit, '
-              'Mitglieder, Tags und Dokumente dieser Gruppe. Frag mich etwas dazu.',
-          suggestions: const [
-            'Wann und wo?',
-            'Wer ist dabei?',
-            'Worum geht es?',
-            'Zusammenfassung',
-          ],
-        ),
-      );
     }
-
-    setState(() => _started = true);
+    final names = _selectedEvents.map((e) => e.title).join(', ');
+    _messages
+      ..clear()
+      ..add(_ChatMessage(
+        fromBot: true,
+        text: 'KI-Chat zu: $names.\nIch beantworte Fragen zu den PDF-Dokumenten '
+            'dieser Lerngruppe(n). Standardmäßig nutze ich alle Dokumente – über '
+            'das Ordner-Symbol oben kannst du gezielt einzelne auswählen.',
+      ));
+    setState(() {});
     _scrollToBottom();
   }
 
   void _backToSelection() {
-    _contextEvent?.controller.removeListener(_onChanged);
     setState(() {
-      _started = false;
-      _contextEvent = null;
+      _mode = _Mode.none;
       _messages.clear();
+      _selectedFileNames.clear();
     });
   }
 
@@ -150,6 +160,67 @@ class _ChatbotTabState extends State<ChatbotTab>
     });
   }
 
+  void _dispatchSend(String raw) {
+    if (_mode == _Mode.ai) {
+      _sendAi(raw);
+    } else {
+      _sendGeneral(raw);
+    }
+  }
+
+  // --- General (local) --- //
+  void _sendGeneral(String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _messages.add(_ChatMessage(text: text, fromBot: false));
+      _messages.add(_buildGeneralReply(text));
+      _controller.clear();
+    });
+    _scrollToBottom();
+  }
+
+  // --- AI (backend) --- //
+  Future<void> _sendAi(String raw) async {
+    final text = raw.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _messages.add(_ChatMessage(text: text, fromBot: false));
+      _messages.add(_ChatMessage(fromBot: true, loading: true));
+      _controller.clear();
+    });
+    _scrollToBottom();
+
+    final token = await AppDI.instance.authService.getAccessToken();
+    final result = await widget.aiService.chat(
+      text,
+      _selectedEventIds.toList(),
+      _selectedFileNames.toList(),
+      token,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _messages.removeWhere((m) => m.loading);
+      if (result == null) {
+        _messages.add(_ChatMessage(
+          fromBot: true,
+          text: 'Die KI ist gerade nicht erreichbar. Läuft das Backend und ist '
+              'ein KI-Modell konfiguriert?',
+        ));
+      } else {
+        _messages.add(_ChatMessage(
+          fromBot: true,
+          text: result.answer.isEmpty
+              ? 'Ich habe dazu keine Antwort erhalten.'
+              : result.answer,
+          notes: result.notes,
+        ));
+      }
+    });
+    _scrollToBottom();
+  }
+
   DateTime _nextStart(Event event) => studyGroupSortKey(event);
 
   bool _isOnDay(Event event, DateTime day) {
@@ -157,161 +228,6 @@ class _ChatbotTabState extends State<ChatbotTab>
     return start.year == day.year &&
         start.month == day.month &&
         start.day == day.day;
-  }
-
-  void _send(String raw) {
-    final text = raw.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      _messages.add(_ChatMessage(text: text, fromBot: false));
-      _messages.add(
-        _contextEvent == null
-            ? _buildGeneralReply(text)
-            : _buildGroupReply(text, _contextEvent!),
-      );
-      _controller.clear();
-    });
-    _scrollToBottom();
-  }
-
-  // --- Context string handed to the assistant (and later to the LLM). --- //
-  String buildGroupContext(Event e) {
-    final b = StringBuffer();
-    b.writeln('Lerngruppe: ${e.title}');
-    b.writeln(
-        'Gastgeber: ${e.creator.displayname.isEmpty ? 'Unbekannt' : e.creator.displayname}');
-    b.writeln('Ort: ${e.location}');
-    final time = Formatter.deserialiseDateTime(e.iso8601startDateTime,
-                rawDates: true)
-            .time +
-        (e.iso8601endDateTime.isEmpty
-            ? ''
-            : ' – ${Formatter.deserialiseDateTime(e.iso8601endDateTime, rawDates: true).time}');
-    b.writeln('Uhrzeit: $time');
-    if (e.days.isEmpty) {
-      b.writeln('Datum: ${e.date}');
-    } else {
-      b.writeln(
-          'Nächster Termin: ${Formatter.deserialiseDateTime(Formatter.calculateNextIso8601(e.iso8601startDateTime, e.days)).date}');
-      b.writeln('Wiederholt sich: ${Formatter.deserialiseDays(e.days).join(', ')}');
-    }
-    b.writeln('Status: ${studyGroupStatus(e).label}');
-    if (e.description.isNotEmpty) b.writeln('Beschreibung: ${e.description}');
-    if (e.recommendation.isNotEmpty) b.writeln('Lerntipp: ${e.recommendation}');
-    if (e.tags.isNotEmpty) b.writeln('Tags: ${e.tags.join(', ')}');
-    b.writeln(e.members.isEmpty
-        ? 'Mitglieder: keine'
-        : 'Mitglieder (${e.members.length}): ${e.members.map((m) => m.displayname).join(', ')}');
-    b.writeln(e.filePreviews.isEmpty
-        ? 'Dokumente: keine'
-        : 'Dokumente: ${e.filePreviews.map((f) => f.fileName).join(', ')}');
-    if (e.comments.isNotEmpty) {
-      b.writeln('Kommentare (${e.comments.length}):');
-      for (final c in e.comments.take(5)) {
-        b.writeln('- ${c.creator.displayname}: ${c.content}');
-      }
-    }
-    return b.toString().trim();
-  }
-
-  _ChatMessage _buildGroupReply(String input, Event e) {
-    final q = input.toLowerCase();
-
-    if (_containsAny(q, ['hilfe', 'help', 'was kannst du'])) {
-      return _ChatMessage(
-        fromBot: true,
-        text: 'Zu „${e.title}" kann ich dir sagen:\n'
-            '• Wann und wo? • Wer ist dabei? • Welche Tags/Themen?\n'
-            '• Welche Dokumente gibt es? • Worum geht es (Beschreibung)?\n'
-            '• „Zusammenfassung" für alles auf einmal.',
-      );
-    }
-
-    if (_containsAny(q, ['zusammenfassung', 'überblick', 'ueberblick', 'alles', 'details'])) {
-      return _ChatMessage(fromBot: true, text: buildGroupContext(e));
-    }
-
-    if (_containsAny(q, ['wann', 'zeit', 'uhr', 'termin', 'datum', 'wo ', 'ort', 'raum'])) {
-      final where = 'Ort: ${e.location}';
-      final time = Formatter.deserialiseDateTime(e.iso8601startDateTime, rawDates: true).time;
-      final when = e.days.isEmpty
-          ? 'am ${e.date} um $time'
-          : 'nächster Termin ${Formatter.deserialiseDateTime(Formatter.calculateNextIso8601(e.iso8601startDateTime, e.days)).date} um $time (${Formatter.deserialiseDays(e.days).join(', ')})';
-      return _ChatMessage(
-        fromBot: true,
-        text: '„${e.title}" findet $when statt.\n$where',
-      );
-    }
-
-    if (_containsAny(q, ['wer', 'mitglied', 'teilnehmer', 'dabei', 'leute', 'personen'])) {
-      if (e.members.isEmpty) {
-        return _ChatMessage(
-          fromBot: true,
-          text: 'Aktuell ist niemand als Mitglied eingetragen. Gastgeber ist '
-              '${e.creator.displayname}.',
-        );
-      }
-      return _ChatMessage(
-        fromBot: true,
-        text: '${e.members.length} dabei: '
-            '${e.members.map((m) => m.displayname).join(', ')}.\n'
-            'Gastgeber: ${e.creator.displayname}.',
-      );
-    }
-
-    if (_containsAny(q, ['tag', 'thema', 'themen', 'fach'])) {
-      return _ChatMessage(
-        fromBot: true,
-        text: e.tags.isEmpty
-            ? 'Für diese Gruppe sind noch keine Tags hinterlegt.'
-            : 'Themen/Tags: ${e.tags.join(', ')}.',
-      );
-    }
-
-    if (_containsAny(q, ['datei', 'dokument', 'unterlage', 'pdf', 'material', 'skript'])) {
-      return _ChatMessage(
-        fromBot: true,
-        text: e.filePreviews.isEmpty
-            ? 'Es sind noch keine Dokumente hochgeladen.'
-            : 'Dokumente (${e.filePreviews.length}): '
-                '${e.filePreviews.map((f) => f.fileName).join(', ')}.',
-      );
-    }
-
-    if (_containsAny(q, ['worum', 'beschreibung', 'info', 'inhalt', 'geht es'])) {
-      return _ChatMessage(
-        fromBot: true,
-        text: e.description.isEmpty
-            ? 'Für diese Gruppe gibt es keine Beschreibung.'
-            : e.description,
-      );
-    }
-
-    if (_containsAny(q, ['tipp', 'empfehlung', 'lernen', 'ratschlag'])) {
-      return _ChatMessage(
-        fromBot: true,
-        text: e.recommendation.isEmpty
-            ? 'Für diese Gruppe gibt es keinen Lerntipp.'
-            : 'Lerntipp: ${e.recommendation}',
-      );
-    }
-
-    if (_containsAny(q, ['kommentar', 'gesagt', 'geschrieben', 'diskussion'])) {
-      return _ChatMessage(
-        fromBot: true,
-        text: e.comments.isEmpty
-            ? 'Es gibt noch keine Kommentare in dieser Gruppe.'
-            : 'Letzte Kommentare:\n${e.comments.take(5).map((c) => '• ${c.creator.displayname}: ${c.content}').join('\n')}',
-      );
-    }
-
-    // Fallback: show the full context summary.
-    return _ChatMessage(
-      fromBot: true,
-      text: 'Dazu habe ich in dieser Gruppe nichts Passendes. Hier alles, was '
-          'ich über „${e.title}" weiß:\n\n${buildGroupContext(e)}',
-      suggestions: const ['Wann und wo?', 'Wer ist dabei?', 'Welche Dokumente?'],
-    );
   }
 
   _ChatMessage _buildGeneralReply(String input) {
@@ -326,18 +242,17 @@ class _ChatbotTabState extends State<ChatbotTab>
         suggestions: const ['Was läuft heute?', 'Welche Gruppen gibt es?'],
       );
     }
-
     if (_containsAny(q, ['hilfe', 'help', 'was kannst du', 'funktion'])) {
       return _ChatMessage(
         fromBot: true,
-        text: 'Im allgemeinen Modus kann ich dir Lerngruppen suchen:\n'
+        text: 'Im allgemeinen Modus finde ich Lerngruppen:\n'
             '• „Was läuft heute?" oder „morgen"\n'
             '• „Welche Gruppen gibt es?"\n'
             '• ein Thema wie „Mathe" oder „Statistik"\n'
-            'Für Fragen zu einer bestimmten Gruppe: oben „Kontext wechseln".',
+            'Für inhaltliche Fragen zu Dokumenten: oben „Kontext wechseln" und '
+            'die KI zu einer Lerngruppe wählen.',
       );
     }
-
     if (_containsAny(q, ['wie viele', 'wieviele', 'anzahl'])) {
       return _ChatMessage(
         fromBot: true,
@@ -345,7 +260,6 @@ class _ChatbotTabState extends State<ChatbotTab>
             'Lerngruppe${events.length == 1 ? '' : 'n'}.',
       );
     }
-
     if (_containsAny(q, ['läuft', 'laeuft', 'jetzt', 'gerade', 'aktiv'])) {
       final live = events
           .where((e) => studyGroupStatus(e).status == StudyGroupStatus.live)
@@ -357,7 +271,6 @@ class _ChatbotTabState extends State<ChatbotTab>
             : 'Diese Gruppe${live.length == 1 ? '' : 'n'} läuft gerade:',
       );
     }
-
     if (q.contains('heute')) {
       final today = DateTime.now();
       final list = events.where((e) => _isOnDay(e, today)).toList()
@@ -365,7 +278,6 @@ class _ChatbotTabState extends State<ChatbotTab>
       return _resultMessage(list,
           list.isEmpty ? 'Heute findet keine Lerngruppe statt.' : 'Heute geplant:');
     }
-
     if (q.contains('morgen')) {
       final tomorrow = DateTime.now().add(const Duration(days: 1));
       final list = events.where((e) => _isOnDay(e, tomorrow)).toList()
@@ -373,7 +285,6 @@ class _ChatbotTabState extends State<ChatbotTab>
       return _resultMessage(list,
           list.isEmpty ? 'Morgen findet keine Lerngruppe statt.' : 'Morgen geplant:');
     }
-
     if (_containsAny(q, ['alle', 'welche gruppen', 'liste', 'übersicht', 'uebersicht'])) {
       final list = List<Event>.from(events)
         ..sort((a, b) => _nextStart(a).compareTo(_nextStart(b)));
@@ -393,7 +304,6 @@ class _ChatbotTabState extends State<ChatbotTab>
     if (matches.isNotEmpty) {
       return _resultMessage(matches, 'Das habe ich zu „$input" gefunden:');
     }
-
     return _ChatMessage(
       fromBot: true,
       text: 'Dazu habe ich nichts gefunden. Frag mich nach einem Thema oder '
@@ -411,7 +321,7 @@ class _ChatbotTabState extends State<ChatbotTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (!_started) {
+    if (_mode == _Mode.none) {
       return _selectionView();
     }
     return Column(
@@ -430,7 +340,7 @@ class _ChatbotTabState extends State<ChatbotTab>
     );
   }
 
-  // --- Pre-chat selection --- //
+  // --- Selection --- //
   Widget _selectionView() {
     final scheme = Theme.of(context).colorScheme;
     final groups = _myGroups;
@@ -442,7 +352,7 @@ class _ChatbotTabState extends State<ChatbotTab>
         Icon(Icons.smart_toy_outlined, size: 48, color: scheme.primary),
         const SizedBox(height: 12),
         Text(
-          'Worauf soll sich deine Frage beziehen?',
+          'Wie möchtest du starten?',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleMedium,
         ),
@@ -456,48 +366,79 @@ class _ChatbotTabState extends State<ChatbotTab>
               child: Icon(Icons.public, color: scheme.onSecondaryContainer),
             ),
             title: const Text('Allgemeine Frage'),
-            subtitle: const Text('Lerngruppen suchen, Termine, Themen'),
+            subtitle: const Text('Lerngruppen suchen, Termine, Themen (lokal)'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => _startChat(null),
+            onTap: _startGeneral,
           ),
         ),
         const SizedBox(height: 20),
+        Row(
+          children: [
+            Icon(Icons.auto_awesome, size: 18, color: scheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'KI zu meinen Lerngruppen',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
         Text(
-          'Oder eine meiner Lerngruppen:',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          'Wähle eine oder mehrere Gruppen – die KI erklärt dir ihre Dokumente.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
               ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         if (!widget.authController.isLoggedIn)
-          _hintCard(scheme, 'Melde dich an, um deine Lerngruppen als Kontext zu nutzen.')
+          _hintCard(scheme, 'Melde dich an, um die KI zu deinen Lerngruppen zu nutzen.')
         else if (groups.isEmpty)
           _hintCard(scheme,
-              'Du bist noch in keiner Lerngruppe. Tritt einer bei, um sie hier auszuwählen.')
-        else
-          ...groups.map(
-            (event) => Card(
-              elevation: 2,
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: scheme.primaryContainer,
-                  child: Icon(Icons.groups_2_outlined,
-                      color: scheme.onPrimaryContainer),
+              'Du bist noch in keiner Lerngruppe. Tritt einer bei, um ihre Dokumente mit der KI zu besprechen.')
+        else ...[
+          ...groups.map((event) {
+            final selected = _selectedEventIds.contains(event.id);
+            return Card(
+              elevation: selected ? 3 : 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: selected ? scheme.primary : Colors.transparent,
+                  width: 1.5,
                 ),
+              ),
+              child: CheckboxListTile(
+                value: selected,
+                onChanged: (checked) => setState(() {
+                  if (checked == true) {
+                    _selectedEventIds.add(event.id);
+                  } else {
+                    _selectedEventIds.remove(event.id);
+                  }
+                }),
                 title: Text(event.title),
                 subtitle: Text(
                   event.location,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                trailing: StudyGroupStatusBadge(event: event, compact: true),
-                onTap: () => _startChat(event),
+                secondary: StudyGroupStatusBadge(event: event, compact: true),
               ),
+            );
+          }),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _selectedEventIds.isEmpty ? null : _startAi,
+            icon: const Icon(Icons.auto_awesome),
+            label: Text(
+              _selectedEventIds.isEmpty
+                  ? 'Gruppe(n) auswählen'
+                  : 'KI-Chat starten (${_selectedEventIds.length})',
             ),
           ),
+        ],
       ],
     );
   }
@@ -514,10 +455,7 @@ class _ChatbotTabState extends State<ChatbotTab>
             Icon(Icons.info_outline, color: scheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                text,
-                style: TextStyle(color: scheme.onSurfaceVariant),
-              ),
+              child: Text(text, style: TextStyle(color: scheme.onSurfaceVariant)),
             ),
           ],
         ),
@@ -527,32 +465,163 @@ class _ChatbotTabState extends State<ChatbotTab>
 
   Widget _contextBar() {
     final scheme = Theme.of(context).colorScheme;
-    final isGroup = _contextEvent != null;
+    final isAi = _mode == _Mode.ai;
+    final label = isAi
+        ? 'KI · ${_selectedEventIds.length} Gruppe${_selectedEventIds.length == 1 ? '' : 'n'}'
+            '${_selectedFileNames.isEmpty ? '' : ' · ${_selectedFileNames.length} Datei(en)'}'
+        : 'Allgemeiner Modus';
     return Material(
       color: scheme.surfaceContainerHighest,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+        padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
         child: Row(
           children: [
-            Icon(isGroup ? Icons.groups_2_outlined : Icons.public,
+            Icon(isAi ? Icons.auto_awesome : Icons.public,
                 size: 18, color: scheme.onSurfaceVariant),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                isGroup ? 'Kontext: ${_contextEvent!.title}' : 'Allgemeiner Modus',
+                label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
+            if (isAi)
+              IconButton(
+                tooltip: 'Dokumente auswählen',
+                icon: const Icon(Icons.folder_open, size: 20),
+                onPressed: _openFilePicker,
+              ),
             TextButton.icon(
               onPressed: _backToSelection,
               icon: const Icon(Icons.swap_horiz, size: 18),
-              label: const Text('Kontext wechseln'),
+              label: const Text('Wechseln'),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _openFilePicker() {
+    final scheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final events = _selectedEvents;
+            final hasFiles = events.any((e) => e.filePreviews.isNotEmpty);
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Dokumente für die KI',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Nichts ausgewählt = alle PDFs der Gruppen. Es werden nur '
+                      'PDFs unterstützt.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (!hasFiles)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            'Keine Dokumente in den gewählten Gruppen.',
+                            style: TextStyle(color: scheme.onSurfaceVariant),
+                          ),
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            for (final event in events) ...[
+                              if (event.filePreviews.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(4, 10, 4, 2),
+                                  child: Text(
+                                    event.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                            color: scheme.onSurfaceVariant),
+                                  ),
+                                ),
+                              ...event.filePreviews.map((file) {
+                                final isPdf =
+                                    file.fileName.toLowerCase().endsWith('.pdf');
+                                final selected =
+                                    _selectedFileNames.contains(file.fileName);
+                                return CheckboxListTile(
+                                  dense: true,
+                                  value: selected,
+                                  onChanged: isPdf
+                                      ? (checked) {
+                                          setSheetState(() {});
+                                          setState(() {
+                                            if (checked == true) {
+                                              _selectedFileNames
+                                                  .add(file.fileName);
+                                            } else {
+                                              _selectedFileNames
+                                                  .remove(file.fileName);
+                                            }
+                                          });
+                                        }
+                                      : null,
+                                  title: Text(file.fileName),
+                                  subtitle: isPdf
+                                      ? null
+                                      : const Text('Keine PDF – nicht auswertbar'),
+                                  secondary: Icon(
+                                    isPdf
+                                        ? Icons.picture_as_pdf_outlined
+                                        : Icons.insert_drive_file_outlined,
+                                  ),
+                                );
+                              }),
+                            ],
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setSheetState(() {});
+                            setState(() => _selectedFileNames.clear());
+                          },
+                          child: const Text('Auswahl leeren'),
+                        ),
+                        const Spacer(),
+                        FilledButton(
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          child: const Text('Fertig'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -578,31 +647,77 @@ class _ChatbotTabState extends State<ChatbotTab>
             bottomRight: Radius.circular(isBot ? 18 : 4),
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.text,
-              style: TextStyle(
-                color: isBot ? scheme.onSurface : scheme.onPrimaryContainer,
+        child: message.loading
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text('Denkt nach …',
+                      style: TextStyle(color: scheme.onSurfaceVariant)),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.text,
+                    style: TextStyle(
+                      color:
+                          isBot ? scheme.onSurface : scheme.onPrimaryContainer,
+                    ),
+                  ),
+                  if (message.notes.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: scheme.surface,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 16, color: scheme.onSurfaceVariant),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              message.notes,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  for (final event in message.results)
+                    _resultTile(event, scheme),
+                  if (message.suggestions.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: message.suggestions
+                          .map((s) => ActionChip(
+                                label: Text(s),
+                                onPressed: () => _dispatchSend(s),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            for (final event in message.results) _resultTile(event, scheme),
-            if (message.suggestions.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: message.suggestions
-                    .map((s) => ActionChip(
-                          label: Text(s),
-                          onPressed: () => _send(s),
-                        ))
-                    .toList(),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
@@ -617,10 +732,8 @@ class _ChatbotTabState extends State<ChatbotTab>
       child: ListTile(
         dense: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text(
-          event.title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: Text(event.title,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
           '${event.location} · ${Formatter.deserialiseDateTime(Formatter.calculateNextIso8601(event.iso8601startDateTime, event.days)).date}',
           maxLines: 1,
@@ -650,9 +763,11 @@ class _ChatbotTabState extends State<ChatbotTab>
               child: TextField(
                 controller: _controller,
                 textInputAction: TextInputAction.send,
-                onSubmitted: _send,
+                onSubmitted: _dispatchSend,
                 decoration: InputDecoration(
-                  hintText: 'Frag den Assistenten …',
+                  hintText: _mode == _Mode.ai
+                      ? 'Frag die KI zu den Dokumenten …'
+                      : 'Frag den Assistenten …',
                   filled: true,
                   fillColor: scheme.surfaceContainerHighest,
                   contentPadding:
@@ -667,7 +782,7 @@ class _ChatbotTabState extends State<ChatbotTab>
             const SizedBox(width: 8),
             IconButton.filled(
               icon: const Icon(Icons.send),
-              onPressed: () => _send(_controller.text),
+              onPressed: () => _dispatchSend(_controller.text),
             ),
           ],
         ),

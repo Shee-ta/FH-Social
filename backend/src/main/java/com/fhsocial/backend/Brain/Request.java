@@ -5,6 +5,7 @@ public enum Request {
     RECOMMENDATION,
     DESCRIPTION,
     EXPLAIN,
-    TASK, 
+    TASK,
     TAGS,
+    CHAT,
 }

@@ -245,6 +245,14 @@ public class RouteController {
         return aiService.generateTags(eventId, authenticatedUserId);
     }
 
+    @PostMapping("/ai/chat")
+    public ResponseEntity<Map<String, String>> chat(
+        @RequestBody JsonNode body,
+        Principal principal
+    ) {
+        return aiService.chat(body);
+    }
+
     // --- AUTH ENDPOINTS --- //
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(
