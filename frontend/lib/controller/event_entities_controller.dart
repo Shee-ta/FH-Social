@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/di/app_di.dart';
 import 'package:frontend/dto/change_member_dto.dart';
 import 'package:frontend/dto/comment_dto.dart';
+import 'package:frontend/dto/user_dto.dart';
 import 'package:frontend/entity/comment.dart';
 import 'package:frontend/entity/event.dart';
 import 'package:frontend/entity/file_preview.dart';
@@ -268,12 +269,31 @@ class EventEntitiesController extends ChangeNotifier {
       return false;
     }
 
+    final auth = AppDI.instance.authController;
+    final bool joining = changeMemberDTO.isAdded;
+
+    // Optimistic update: reflect the change immediately, revert on failure.
+    final bool didOptimisticChange = _applyOptimisticMembership(
+      auth.userId,
+      auth.username,
+      auth.displayname,
+      joining,
+    );
+
     _setIsChangingMembership(true);
 
     final accessToken = await authService.getAccessToken();
     final success = await userService.changeEventMembership(changeMemberDTO, accessToken);
 
-    if(!success) {
+    if (!success) {
+      if (didOptimisticChange) {
+        _applyOptimisticMembership(
+          auth.userId,
+          auth.username,
+          auth.displayname,
+          !joining,
+        );
+      }
       UIfeedbackService.notification(
         message: "Failed to change event membership",
         type: NotificationType.error
@@ -281,6 +301,36 @@ class EventEntitiesController extends ChangeNotifier {
     }
     _setIsChangingMembership(false);
     return success;
+  }
+
+  bool _applyOptimisticMembership(
+    String userId,
+    String username,
+    String displayname,
+    bool add,
+  ) {
+    if (userId.isEmpty) {
+      return false;
+    }
+    final exists = event.members.any((m) => m.id == userId);
+    if (add && !exists) {
+      event.members.add(User(UserDTO(
+        id: userId,
+        username: username,
+        displayname: displayname,
+        role: 'student',
+        createdAt: '',
+        editedAt: '',
+      )));
+      notifyListeners();
+      return true;
+    }
+    if (!add && exists) {
+      event.members.removeWhere((m) => m.id == userId);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<bool> uploadComment(CommentDTO commentDTO, {bool isEditing = false}) async {

@@ -46,6 +46,75 @@ class _FHSocialAppState extends State<FHSocialApp> {
     super.dispose();
   }
 
+  ThemeData _appTheme() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: _di.settingsService.themeColor,
+      brightness: _di.settingsService.themeBrightness,
+    );
+
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: color == Colors.transparent
+              ? BorderSide.none
+              : BorderSide(color: color, width: width),
+        );
+
+    RoundedRectangleBorder buttonShape() =>
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
+
+    const buttonPadding =
+        EdgeInsets.symmetric(horizontal: 20, vertical: 14);
+
+    return ThemeData(
+      colorScheme: colorScheme,
+      extensions: const [
+        AppColors(
+          success: Color.fromARGB(255, 25, 83, 27),
+          successOutline: Color.fromARGB(255, 40, 100, 43),
+          onSuccess: Color(0xFFFFFFFF),
+        ),
+      ],
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        scrolledUnderElevation: 2,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: border(Colors.transparent, 0),
+        enabledBorder: border(Colors.transparent, 0),
+        focusedBorder: border(colorScheme.primary, 1.5),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          padding: buttonPadding,
+          shape: buttonShape(),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          padding: buttonPadding,
+          shape: buttonShape(),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: buttonPadding,
+          shape: buttonShape(),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -59,19 +128,7 @@ class _FHSocialAppState extends State<FHSocialApp> {
           scaffoldMessengerKey: rootScaffoldMessengerKey,
           title: 'FH Social',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            extensions: const [
-              AppColors(
-                success: Color.fromARGB(255, 25, 83, 27),
-                successOutline: Color.fromARGB(255, 40, 100, 43),
-                onSuccess: Color(0xFFFFFFFF),
-              ),
-            ],
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: AppDI.instance.settingsService.themeColor,
-              brightness: AppDI.instance.settingsService.themeBrightness,
-            ),
-          ),
+          theme: _appTheme(),
           initialRoute: MainScreen.routeName,
           onGenerateRoute: (settings) {
             return _guardedRoute(settings, _authController);

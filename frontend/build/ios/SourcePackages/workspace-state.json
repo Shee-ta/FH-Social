@@ -1,0 +1,97 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "file_picker-12.0.0-beta.7",
+          "kind" : "fileSystem",
+          "location" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/file_picker-12.0.0-beta.7",
+          "name" : "file_picker"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/file_picker-12.0.0-beta.7"
+        },
+        "subpath" : "file_picker-12.0.0-beta.7"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "file_saver-0.4.0",
+          "kind" : "fileSystem",
+          "location" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/file_saver-0.4.0",
+          "name" : "file_saver"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/file_saver-0.4.0"
+        },
+        "subpath" : "file_saver-0.4.0"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "flutter_secure_storage_darwin-0.3.2",
+          "kind" : "fileSystem",
+          "location" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/flutter_secure_storage_darwin-0.3.2",
+          "name" : "flutter_secure_storage_darwin"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/flutter_secure_storage_darwin-0.3.2"
+        },
+        "subpath" : "flutter_secure_storage_darwin-0.3.2"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "flutterframework",
+          "kind" : "fileSystem",
+          "location" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework",
+          "name" : "FlutterFramework"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework"
+        },
+        "subpath" : "flutterframework"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "geolocator_apple-2.3.14",
+          "kind" : "fileSystem",
+          "location" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/geolocator_apple-2.3.14",
+          "name" : "geolocator_apple"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/geolocator_apple-2.3.14"
+        },
+        "subpath" : "geolocator_apple-2.3.14"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "package_info_plus-10.2.0",
+          "kind" : "fileSystem",
+          "location" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/package_info_plus-10.2.0",
+          "name" : "package_info_plus"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/dennis/Documents/Uni Lokal/MAE/FH-Social-main/frontend/ios/Flutter/ephemeral/Packages/.packages/package_info_plus-10.2.0"
+        },
+        "subpath" : "package_info_plus-10.2.0"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

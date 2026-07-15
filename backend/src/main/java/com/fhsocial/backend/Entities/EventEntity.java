@@ -282,6 +282,7 @@ public class EventEntity implements Persistable<UUID> {
             this.getLongitude(),
             this.getDays(),
             this.getTags(),
+            this.getMembers().stream().map(UserEntity::toDto).toList(),
             this.getCreatedAt().toString(),
             this.getEditedAt().toString()
         );

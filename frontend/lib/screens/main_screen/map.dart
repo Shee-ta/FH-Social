@@ -336,15 +336,15 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
     try {
       _mapController.move(location, 18);
     } catch (_) {
-      
+      // The map controller may not be ready yet.
     }
   }
 
   int get _interactionFlags {
     if (_isHoveringEventList) {
-      return InteractiveFlag.all & ~InteractiveFlag.scrollWheelZoom & ~InteractiveFlag.flingAnimation;
+      return InteractiveFlag.all & ~InteractiveFlag.scrollWheelZoom;
     }
-    return InteractiveFlag.all & ~InteractiveFlag.flingAnimation;
+    return InteractiveFlag.all;
   }
 
   void _toggleEventList(List<Event> events, {bool forceClose = false}) {
@@ -435,7 +435,7 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
                   isShowingEventList: _isShowingEventList,
                   eventPanelList: _filterByTagsFlat(_eventPanelList),
                   commentDrafts: _commentDrafts,
-                  setFocus: (coords) => _mapController.move(coords, 20),
+                  setFocus: (coords) => _mapController.move(coords, 21),
                   onEventListHoverChanged: (isHovering) {
                     if (_isHoveringEventList == isHovering || !mounted) {
                       return;
@@ -456,7 +456,7 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
                   addEvent: _createEvent,
                   setTag: _setTag,
                   toggleEventList: (events, {bool forceClose = false}) =>
-                    _toggleEventList(events, forceClose: forceClose),
+                      _toggleEventList(events, forceClose: forceClose),
                 ),
               ],
             ),

@@ -45,6 +45,9 @@ class EventController extends ChangeNotifier {
   bool _isDeletingEvent = false;
   bool get isDeletingEvent => _isDeletingEvent;
 
+  bool _isLoadingMemberships = false;
+  bool get isLoadingMemberships => _isLoadingMemberships;
+
   EventController()
   : authService = AppDI.instance.authService,
     eventService = AppDI.instance.eventService,
@@ -56,7 +59,7 @@ class EventController extends ChangeNotifier {
     fetchAll();
   }
 
-  void fetchAll() async {
+  Future<void> fetchAll() async {
     final eventDTOs = await eventService.getEventsAll();
 
     for (final eventDTO in eventDTOs) {
@@ -73,7 +76,31 @@ class EventController extends ChangeNotifier {
         removeEvent(IdDTO(id: event.id));
       }
     }
-    _updateEvents();
+    updateEvents();
+    notifyListeners();
+  }
+
+  /// Loads the member list for every known event so member counts and the
+  /// "Meine Gruppen" tab can be shown without opening each event. Uses only the
+  /// existing public /users/by-event endpoint.
+  Future<void> fetchAllMemberships() async {
+    _isLoadingMemberships = true;
+    notifyListeners();
+
+    await Future.wait(
+      _events.map((event) async {
+        try {
+          final memberDTOs = await userService.fetchEventMembers(event.id);
+          event.members
+            ..clear()
+            ..addAll(memberDTOs.map((dto) => User(dto)));
+        } catch (_) {
+          // Ignore individual failures; a single event should not break the tab.
+        }
+      }),
+    );
+
+    _isLoadingMemberships = false;
     notifyListeners();
   }
 
@@ -120,7 +147,7 @@ class EventController extends ChangeNotifier {
   }
 
   // --- EVENT ASSEMBLY --- //
-  void _updateEvents() {
+  void updateEvents() {
     final Map<String, List<Event>> groupedEvents = {};
     for (final event in _events) {
       final key = '${event.latitude},${event.longitude}';
@@ -148,7 +175,7 @@ class EventController extends ChangeNotifier {
       final event = Event(eventDTO);
       _events.add(event);
     }
-    _updateEvents();
+    updateEvents();
     notifyListeners();
   }
 
@@ -159,7 +186,7 @@ class EventController extends ChangeNotifier {
     }
     _events[index].controller.setEventDeleted();
     _events.removeWhere((e) => e.id == idDTO.id);
-    _updateEvents();
+    updateEvents();
     notifyListeners();
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/di/app_di.dart';
 import 'package:frontend/environment/environment.dart';
-import 'package:frontend/screens/main_screen.dart';
 import 'package:frontend/services/backend_url_service.dart';
 import 'package:frontend/services/ui_feedback_service.dart';
 
@@ -107,7 +106,11 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Zurück',
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: const Text('Backend URL'),
       ),
       body: Center(
@@ -133,7 +136,6 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
                     onFieldSubmitted: (_) => _save(),
                     decoration: const InputDecoration(
                       labelText: 'Backend URL',
-                      border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       final input = value?.trim() ?? '';
@@ -153,12 +155,7 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
-                    onPressed: _isSaving ? null : () async {
-                      await _save();
-                      if(context.mounted) {
-                        Navigator.pushNamed(context, MainScreen.routeName);
-                      }
-                    },
+                    onPressed: _isSaving ? null : _save,
                     icon: _isSaving
                         ? const SizedBox(
                             width: 16,

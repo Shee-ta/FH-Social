@@ -16,6 +16,7 @@ public record EventDTO(
     double longitude,
     List<String> days,
     List<String> tags,
+    List<UserDTO> members,
     String createdAt,
     String editedAt
 ) {}

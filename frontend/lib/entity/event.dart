@@ -75,7 +75,7 @@ class Event {
     _longitude = dto.longitude,
     _days = List<String>.from(dto.days),
     _tags = List<String>.from(dto.tags ?? []),
-    _members = [],
+    _members = (dto.members ?? const []).map((u) => User(u)).toList(),
     _filePreviews = [],
     _comments = []
     {
@@ -99,6 +99,11 @@ class Event {
     _tags
       ..clear()
       ..addAll(dto.tags ?? []);
+    if (dto.members != null) {
+      _members
+        ..clear()
+        ..addAll(dto.members!.map((u) => User(u)));
+    }
   }
 
   EventDraft toDraft() {

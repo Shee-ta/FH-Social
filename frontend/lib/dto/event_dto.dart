@@ -15,6 +15,7 @@ class EventDTO {
     required this.longitude,
     required this.days,
     this.tags,
+    this.members,
     this.createdAt,
     this.editedAt,
   });
@@ -31,6 +32,7 @@ class EventDTO {
   final double longitude;
   final List<String> days;
   final List<String>? tags;
+  final List<UserDTO>? members;
   final String? createdAt;
   final String? editedAt;
 
@@ -53,6 +55,11 @@ class EventDTO {
       longitude: (json['longitude'] as num).toDouble(),
       days: List<String>.from(json['days']),
       tags: List<String>.from(json['tags']),
+      members: json['members'] != null
+          ? (json['members'] as List)
+              .map((e) => UserDTO.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : null,
       createdAt: json['createdAt'],
       editedAt: json['editedAt'],
     );
