@@ -4,7 +4,6 @@ import 'package:frontend/environment/environment.dart';
 import 'package:frontend/screens/main_screen.dart';
 import 'package:frontend/services/backend_url_service.dart';
 import 'package:frontend/services/ui_feedback_service.dart';
-import 'package:http/http.dart' as http;
 
 class BackendUrlSettingsScreen extends StatefulWidget {
   const BackendUrlSettingsScreen({super.key});
@@ -46,9 +45,6 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
 
     final raw = _urlController.text;
     final normalized = BackendUrlService.normalize(raw);
-
-    final respose = await http.get(Uri.parse(normalized));
-    print('Response status: ${respose.statusCode}');
 
     try {
       await _di.applyBackendUrl(normalized);

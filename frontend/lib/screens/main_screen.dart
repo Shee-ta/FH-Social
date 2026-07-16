@@ -88,6 +88,8 @@ class MainScreen extends StatelessWidget {
             ),
             title: const Text('FH Social'),
             bottom: TabBar(
+              tabAlignment: TabAlignment.values[screenWidth > 500 ? 2 : 1],
+              isScrollable: screenWidth > 500 ? false : true,
               tabs: _tabs,
             ),
             actions: [
