@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
-ENV GEMINI_API_KEY=AQ.Ab8RN6I01BAQcsyR6kdb50lcbcLeBE6_QuGPuFw5xIvluKCfcw
 
 COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
 

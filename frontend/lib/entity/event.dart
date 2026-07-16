@@ -53,21 +53,21 @@ class Event {
     final now = DateTime.now();
     if (now.isBefore(nextDateTime) &&
         nextDateTime.difference(now) <= const Duration(minutes: 60)) {
-      return 'Startet bald';
+      return 'Starting soonx';
     }
 
     if (now.isBefore(nextDateTime)) {
-      return 'Geplant';
+      return 'Planned';
     }
 
     if (endTime != null && now.isBefore(endTime) && now.isAfter(nextDateTime)) {
-      return 'Läuft gerade';
+      return 'Ongoing';
     }
     else if (endTime == null && now.isAfter(nextDateTime) && now.difference(nextDateTime) <= const Duration(minutes: 60)) {
-      return 'Läuft gerade';
+      return 'Ongoing';
     }
 
-    return 'Vorbei';
+    return 'Over';
   }
 
   late final EventEntitiesController _controller;

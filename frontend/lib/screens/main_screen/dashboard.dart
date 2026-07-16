@@ -60,25 +60,22 @@ class _DashboardState extends State<Dashboard> {
               final createdEvents = allEvents
                   .where((event) => event.creator.id == userId)
                   .toList()
-                ..sort((a, b) => dashboardEventNextDateTime(a).compareTo(dashboardEventNextDateTime(b)));
+                ..sort((a, b) => dashboardEventNextDateTime(b).compareTo(dashboardEventNextDateTime(a)));
 
               final joinedEvents = allEvents
                   .where((event) => event.members.any((member) => member.id == userId))
                   .toList()
                 ..sort((a, b) => dashboardEventNextDateTime(a).compareTo(dashboardEventNextDateTime(b)));
 
-              final upcomingCreatedEvents = createdEvents.where((event) => !dashboardIsEventPast(event)).toList();
-              final upcomingJoinedEvents = joinedEvents.where((event) => !dashboardIsEventPast(event)).toList();
-
               final uniqueEvents = <String, Event>{
-                for (final event in [...upcomingCreatedEvents, ...upcomingJoinedEvents]) event.id: event,
+                for (final event in [...createdEvents, ...joinedEvents]) event.id: event,
               }.values.toList();
 
               final screenWidth = MediaQuery.of(context).size.width;
               final isWide = screenWidth >= 1100;
 
-              final createdIds = upcomingCreatedEvents.map((event) => event.id).toSet();
-              final memberIds = upcomingJoinedEvents.map((event) => event.id).toSet();
+              final createdIds = createdEvents.map((event) => event.id).toSet();
+              final memberIds = joinedEvents.map((event) => event.id).toSet();
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -110,8 +107,8 @@ class _DashboardState extends State<Dashboard> {
                       else
                         _buildCardMode(
                           isWide: isWide,
-                          upcomingCreatedEvents: upcomingCreatedEvents,
-                          upcomingJoinedEvents: upcomingJoinedEvents,
+                          createdEvents: createdEvents,
+                          joinedEvents: joinedEvents,
                           onEventTap: (event) => _openEventPopup(context, event),
                         ),
                       ],
@@ -142,22 +139,22 @@ class _DashboardState extends State<Dashboard> {
 
   Widget _buildCardMode({
     required bool isWide,
-    required List<Event> upcomingCreatedEvents,
-    required List<Event> upcomingJoinedEvents,
+    required List<Event> createdEvents,
+    required List<Event> joinedEvents,
     required ValueChanged<Event> onEventTap,
   }) {
     final createdEventsSection = DashboardSection(
       title: 'Your events',
-      subtitle: 'Your own upcoming events in time order.',
-      events: upcomingCreatedEvents,
-      emptyMessage: 'You have not created any upcoming events yet.',
+      subtitle: 'Your own events in time order.',
+      events: createdEvents,
+      emptyMessage: 'You have not created any events yet.',
       onEventTap: (_, event) => onEventTap(event),
     );
 
     final upcomingEventsSection = DashboardSection(
       title: 'Memberships',
       subtitle: 'Events you joined in time order.',
-      events: upcomingJoinedEvents,
+      events: joinedEvents,
       emptyMessage: 'You are not yet a member of any upcoming events.',
       onEventTap: (_, event) => onEventTap(event),
     );

@@ -3,6 +3,7 @@ package com.fhsocial.backend.Brain;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,6 +21,10 @@ import reactor.core.publisher.Flux;
 
 @Service
 public class Brain {
+
+    private static final int MAX_RECOMMENDATION_LENGTH = 600;
+    private static final int MAX_TAG_LENGTH = 255;
+    private static final int MAX_TAG_COUNT = 10;
 
     private Map<Request, String> contextMap = new HashMap<>();
 
@@ -77,30 +82,29 @@ public class Brain {
 
             ✓ Graph representations
             ✓ Dijkstra
-            ✓ Bellman-Ford
 
             Recommended order:
             1. Review graph basics (15 min)
             2. Solve Tasks 1–2 (30 min)
             3. Discuss Task 3 (20 min)
-            4. Review solutions (15 min)"
             and then adding a one-sentence learn recommendation like: "You study most efficiently by
-            forming a small teams and dividing the work clearly by <include how to divide work>. Keep it below 600 chars. 
+            forming a small teams and dividing the work clearly by <include how to divide work>. Keep it all short and precise with no more than 400 chars. 
             """);
          contextMap.put(Request.TAGS,
             contextMap.get(Request.DEFAULT_CONTEXT) + """
-            generate relevant tags (not more than ten) in English for this event based on the file 
-            content (if existing) and event content if given and if you consider them relevant (e.g. "Algebra / Mathe 3" as title -> "Mathematik"-tag), separated by commas, for example: \"tag1, tag2, tag3\". 
-            Do not use any extra text or formatting. 
+            generate relevant tags (around five or less) in English for this event based on the topics in the file 
+            content (if existing) and event content if given and if you consider them relevant (e.g. "Algebra / Mathe 3" as title -> "Mathematik"-tag), 
+            separated by commas, for example: \"UX/UI Design, Mathematics 4, Python\". 
+            Do not use any extra text or formatting. Tags must be very short and concise, no more than 20 characters each.
             If a list of tags is given in the prompt and the tags you would generate are very similar or
             abbrevations of them, use the relevant ones in the list rather than generating new ones.
             """);
         contextMap.put(Request.CHAT, """
-            You are a study assistant for the app FH Social. Answer the user's question using the
+            answer the user's question using the
             provided document contents and event data below. The documents are OCR/extracted text of
             PDF learning materials. If the answer is not contained in the provided material, say so
-            briefly instead of inventing facts. Answer in the same language as the user's question
-            (German if the question is in German). Be concise, clear and helpful. Do not mention that
+            briefly instead of inventing facts. Answer in the same language as the user's question.
+            Be concise, clear and helpful. Do not mention that
             you received the text as context.
             """);
     }
@@ -141,10 +145,11 @@ public class Brain {
             Flux<String> responseStream = getAnswerStream(contextMap.get(request), prompt);
 
             String response = responseStream
+                .filter(line -> line != null && !line.equals("[DONE]"))
                 .collect(Collectors.joining())
                 .block();
 
-            event.setRecommendation(response);
+            event.setRecommendation(sanitizeRecommendation(response));
 
             eventRepository.save(event);
             eventRepository.flush();
@@ -176,7 +181,12 @@ public class Brain {
                 generatedTags = Stream.of(tagsArray)
                     .map(String::trim)
                     .filter(tag -> !tag.isEmpty())
-                    .toList();
+                    .map(this::sanitizeTag)
+                    .filter(tag -> !tag.isEmpty())
+                    .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(LinkedHashSet::new),
+                        uniqueTags -> uniqueTags.stream().limit(MAX_TAG_COUNT).toList()
+                    ));
             }
 
             event.getTags().clear();
@@ -191,6 +201,28 @@ public class Brain {
             logger.warn("Error while generating tags for event with id={}", event.getId(), e);
             return false;
         }
+    }
+
+    private String sanitizeRecommendation(String recommendation) {
+        if (recommendation == null) {
+            return "";
+        }
+        String normalized = recommendation.trim();
+        if (normalized.length() <= MAX_RECOMMENDATION_LENGTH) {
+            return normalized;
+        }
+        return normalized.substring(0, MAX_RECOMMENDATION_LENGTH);
+    }
+
+    private String sanitizeTag(String tag) {
+        if (tag == null) {
+            return "";
+        }
+        String normalized = tag.trim();
+        if (normalized.length() <= MAX_TAG_LENGTH) {
+            return normalized;
+        }
+        return normalized.substring(0, MAX_TAG_LENGTH);
     }
 }
 

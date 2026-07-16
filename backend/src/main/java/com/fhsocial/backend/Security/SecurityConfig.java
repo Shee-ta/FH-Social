@@ -33,7 +33,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/auth/**", "/events/**", "/comments/**", "/users/**", "/ai/**", "/sse/**", "/file/**").permitAll()
+                .requestMatchers("/", "/auth/**", "/events/**", "/comments/**", "/users/**", "/ai/**", "/sse/**", "/file/**").permitAll()
                 .requestMatchers("/upload/**", "/delete/**", "/file/download").authenticated()
                 .anyRequest().authenticated()
             )

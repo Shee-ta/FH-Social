@@ -22,7 +22,7 @@ services:
       SPRING_DATASOURCE_USERNAME: fh_social
       SPRING_DATASOURCE_PASSWORD: fh_social
       # --- AI provider: set to "ollama" for local Ollama, "google-genai" for Gemini ---
-      AI_PROVIDER: google-genai
+      AI_PROVIDER: ollama
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       OLLAMA_MODEL: phi4-mini:latest
     extra_hosts:
