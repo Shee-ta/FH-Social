@@ -407,7 +407,7 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
             onCreateEvent: _createEvent,
           ),
         Align(
-          alignment: isMobile ? Alignment.topCenter : Alignment.topLeft,
+          alignment: Alignment.topLeft,
           child: Padding(
             padding: EdgeInsets.all(isMobile ? 8 : 12),
             child: MapInfoBar(
