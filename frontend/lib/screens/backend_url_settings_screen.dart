@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/di/app_di.dart';
 import 'package:frontend/environment/environment.dart';
 import 'package:frontend/screens/main_screen.dart';
+import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/services/backend_url_service.dart';
 import 'package:frontend/services/ui_feedback_service.dart';
 
@@ -107,8 +108,24 @@ class _BackendUrlSettingsScreenState extends State<BackendUrlSettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushNamed(context, SettingsScreen.routeName);
+          },
+          tooltip: 'Back to settings',
+          icon: const Icon(Icons.settings),
+        ),
         automaticallyImplyLeading: false,
         title: const Text('Backend URL'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(context, MainScreen.routeName);
+            },
+            tooltip: 'Back to map',
+            icon: const Icon(Icons.map),
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(

@@ -19,7 +19,7 @@ class TitleField extends StatelessWidget {
       controller: titleController,
       onChanged: (value) => draft.title = value,
       decoration: const InputDecoration(
-        labelText: 'Titel *',
+        labelText: 'Title *',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(
             Radius.circular(Const.textFieldRadius),

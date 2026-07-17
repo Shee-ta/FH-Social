@@ -206,7 +206,7 @@ class _EventsTabState extends State<EventsTab> with AutomaticKeepAliveClientMixi
         controller: _searchController,
         onChanged: (value) => setState(() => _query = value.trim()),
         decoration: InputDecoration(
-          hintText: 'Nach Titel, Tag oder Host suchen',
+          hintText: 'Search by title, tag, or host',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: _query.isEmpty
               ? null
@@ -278,10 +278,10 @@ class _EventsTabState extends State<EventsTab> with AutomaticKeepAliveClientMixi
           const SizedBox(height: 16),
           Text(
             _query.isNotEmpty
-                ? 'Keine Events passen zur Suche.'
+                ? 'No events match your search.'
                 : widget.settingsService.eventSelectedMode[0]
-                    ? 'Es sind noch keine Events vorhanden.'
-                    : 'Es sind aktuell keine zukünftigen Events vorhanden.',
+                    ? 'There are no events yet.'
+                    : 'There are currently no upcoming events.',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),

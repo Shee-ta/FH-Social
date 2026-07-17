@@ -403,7 +403,7 @@ class _ChatbotTabState extends State<ChatbotTab>
           'treffen',
         ])) {
       final live = events
-          .where((event) => Event.getStatus(event) == 'Läuft gerade')
+          .where((event) => Event.getStatus(event) == 'Ongoing')
           .toList();
       return _resultMessage(
         live,

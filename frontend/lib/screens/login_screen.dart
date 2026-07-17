@@ -90,15 +90,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
             leading: IconButton(
+              icon: const Icon(Icons.map),
               onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  MainScreen.routeName,
-                  (_) => false,
-                );
+                Navigator.pushNamed(context, MainScreen.routeName);
               },
-              tooltip: 'Return to main page',
-              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Return to map',
             ),
           ),
           body: Center(

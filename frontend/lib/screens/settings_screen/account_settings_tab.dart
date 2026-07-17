@@ -56,7 +56,7 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
       case 'student':
         return 'Student';
       default:
-        return role.isEmpty ? 'Unbekannt' : role;
+        return role.isEmpty ? 'Unknown' : role;
     }
   }
 
@@ -166,7 +166,7 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          displayname.isNotEmpty ? displayname : 'Unbekannt',
+                          displayname.isNotEmpty ? displayname : 'Unknown',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -183,13 +183,13 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
                 ],
               ),
               const Divider(height: 32),
-              _infoRow(context, Icons.badge_outlined, 'Rolle', _roleLabel(role)),
+              _infoRow(context, Icons.badge_outlined, 'Role', _roleLabel(role)),
               _infoRow(
                 context,
                 Icons.calendar_month_outlined,
-                'Mitglied seit',
+                'Member since',
                 memberSince.isEmpty
-                    ? 'Unbekannt'
+                    ? 'Unknown'
                     : Formatter.deserialiseDateTime(memberSince, rawDates: true)
                         .date,
               ),
@@ -197,13 +197,13 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
                 context,
                 Icons.verified_user_outlined,
                 'Status',
-                authController.isLoggedIn ? 'Angemeldet' : 'Abgemeldet',
+                authController.isLoggedIn ? 'Logged in' : 'Logged out',
               ),
               _infoRow(
                 context,
                 Icons.fingerprint,
-                'Nutzer-ID',
-                userId.length >= 8 ? '${userId.substring(0, 8)}…' : userId,
+                'User ID',
+                userId,
               ),
             ],
           ),
@@ -225,60 +225,67 @@ class _AccountSettingsTabState extends State<AccountSettingsTab> {
         children: [
           Icon(icon, size: 20, color: scheme.onSurfaceVariant),
           const SizedBox(width: 14),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-          ),
-          const Spacer(),
-          Flexible(
+          Expanded(
             child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
             ),
           ),
+          Flexible(
+            child: Text(
+            value,
+            maxLines: null,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w100,
+            ),
+          ),
+          )
         ],
       ),
     );
   }
 
   Widget _notLoggedIn(BuildContext context, ColorScheme scheme) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(Icons.person_off_outlined,
-                size: 48, color: scheme.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text(
-              'Nicht angemeldet',
-              style: Theme.of(context).textTheme.titleMedium,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 500),
+      child: SizedBox(
+        width: double.infinity,
+        child: Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Icon(Icons.person_off_outlined,
+                    size: 48, color: scheme.onSurfaceVariant),
+                const SizedBox(height: 12),
+                Text(
+                  'Not logged in',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Sign in to view your account details.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  style: widget.settingsService.positiveButtonStyle(context),
+                  icon: const Icon(Icons.login),
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+                  },
+                  label: const Text('Go to Login'),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Melde dich an, um deine Kontodaten zu sehen.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              style: widget.settingsService.positiveButtonStyle(context),
-              icon: const Icon(Icons.login),
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, LoginScreen.routeName);
-              },
-              label: const Text('Zum Login'),
-            ),
-          ],
+          ),
         ),
       ),
     );
