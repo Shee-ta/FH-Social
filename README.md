@@ -39,3 +39,13 @@ flutter run -d web-server
 ```
 
 The app will automatically connect to the backend on localhost:3000
+
+## 4. Connecting with Ollama
+
+The backend-device requires the installation of [Ollama](https://ollama.com/) and Microsoft's phi4-mini. Install Ollama and execute  
+
+```sh
+ollama run phi4-mini
+```
+
+No additional steps are required. The backend will automatically use phi4-mini while Ollama is running.
