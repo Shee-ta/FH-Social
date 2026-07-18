@@ -1,78 +1,41 @@
 # FH_Social
 
-<<<<<<< HEAD
-A new Flutter project.
+This app is a project by students. Flaws are to be expected.
 
-## Getting Started
+The app requires a backend running in the same local network as the frontend device. Those instructions assume the user uses an Android phone.
 
-This project is a starting point for a Flutter application.
+If you already own the apk, skip paragaph 1.
 
-A few resources to get you started if this is your first Flutter project:
-=======
-A Flutter frontend with a Spring Boot backend.
+## 1. Creating the app
 
-## Local Network Setup (Mac backend + phone app)
+Clone the repository and execute "flutter build apk --release" in /frontend. This will build an apk-file in build/app/outputs/flutter-apk/app-release.apk. Move the file to your phone and open it to install the app. 
 
-Run the backend on your Mac and connect Android/iOS devices on the same Wi-Fi.
+## 2. Backend setup
 
-1. Find your Mac LAN IP (for example, 192.168.1.42).
-2. Start backend from project root:
+Open /backend and execute
 
-```sh
-docker compose up --build
-```
+`docker builder prune -a && docker compose down -v && docker compose up -d --build`
 
-3. Start frontend on a physical device with BACKEND_URL:
+This will create containers for the database and backend. Docker Desktop has to be installed and running.
 
-```sh
-cd frontend
-flutter run -d <device-id> --dart-define=BACKEND_URL=http://192.168.1.42:3000
-```
+## 3. Connecting server with frontend
 
-Notes:
-- Physical devices cannot use localhost for the Mac backend.
-- Android emulator can use http://10.0.2.2:3000.
-- Web keeps using localhost unless BACKEND_URL is provided.
+Find the LAN IP of the device that runs the backend (for example, 192.168.1.42).
 
-## Export / Build
+Open the app on your phone, go to the /settings/backend-url route and set the backend-url to the LAN IP you found above. The listening port is 3000
 
-Android (APK):
+Alternatively, connect your phone with your backend machine (USB debugging has to be enabled) and execute 
 
 ```sh
-cd frontend
-flutter build apk --release --dart-define=BACKEND_URL=http://192.168.1.42:3000
+flutter run -d <device-id> --dart-define=BACKEND_URL=http://<LAN IP>:3000
 ```
 
-iOS (from macOS with Xcode + CocoaPods installed):
+This will install the app on your phone and set the correct url value for the backend.
+
+To run the backend and frontend on the same device, go to /frontend and execute
 
 ```sh
-cd frontend
-flutter build ios --release --dart-define=BACKEND_URL=http://192.168.1.42:3000
+flutter run -d web-server
 ```
 
-## Required Tooling
-
-Your machine must have:
-- Android SDK (Android Studio setup)
-- Xcode full installation
-- CocoaPods
-
-Check with:
-
-```sh
-flutter doctor -v
-```
-
-## Helpful Flutter Docs
->>>>>>> 9fecced (Added introduction to export app to mobile)
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-<<<<<<< HEAD
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
->>>>>>> 9fecced (Added introduction to export app to mobile)
+The app will automatically connect to the backend on localhost:3000
