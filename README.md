@@ -1,3 +1,4 @@
+
 # FH_Social
 
 This app is a project by a student. Flaws are to be expected.
@@ -45,3 +46,8 @@ in a terminal to download a local model. While Ollama is running, the backend wi
 If the client is running on another decive than the backend, find the local IPv4 address of the backend device, e.g. 192.168.0.81. 
 
 Open the frontend, go to the /settings/backend-url route and set the backend-url to the LAN IP you found above. The listening port is 3000.
+
+<img width="373" height="667" alt="1" src="https://github.com/user-attachments/assets/cdd0fc54-bfad-4333-b2cf-ea917b794d20" />
+<img width="373" height="667" alt="2" src="https://github.com/user-attachments/assets/4f200eb7-af73-4f01-8690-c193ccec4652" />
+<img width="373" height="667" alt="3" src="https://github.com/user-attachments/assets/246d3ca5-e87f-4f75-86db-6b9f8586b1eb" />
+<img width="373" height="667" alt="4" src="https://github.com/user-attachments/assets/8fdabcaa-f80a-4f25-ad3a-a8c7d6cd6611" />
