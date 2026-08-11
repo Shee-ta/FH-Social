@@ -1,51 +1,46 @@
 # FH_Social
 
-This app is a project by students. Flaws are to be expected.
+This app is a project by a student. Flaws are to be expected.
 
-The app requires a backend running in the same local network as the frontend device. Those instructions assume the user uses an Android phone.
-
-If you already own the apk, skip paragaph 1.
+The app requires a backend running on the same device or in the same local network as the frontend device. Those instructions assume the user uses an Android phone.
 
 ## 1. Creating the app
 
-Clone the repository and execute "flutter build apk --release" in /frontend. This will build an apk-file in build/app/outputs/flutter-apk/app-release.apk. Move the file to your phone and open it to install the app. 
+To run it on web, go to /frontend and execute
+
+```sh
+flutter run -d web-server --release
+```
+then open the open when the project finished building.
+
+For Android, execute 
+
+```sh
+flutter build apk --release
+```
+in /frontend. This will build an apk-file in build/app/outputs/flutter-apk/app-release.apk. Move the file to your phone and open it to install the app. 
 
 ## 2. Backend setup
 
 Open /backend and execute
 
-`docker builder prune -a && docker compose down -v && docker compose up -d --build`
+```sh
+docker builder prune -a && docker compose down -v && docker compose up -d --build
+```
 
 This will create containers for the database and backend. Docker Desktop has to be installed and running.
 
-## 3. Connecting server with frontend
+## 3. AI setup
 
-Find the LAN IP of the device that runs the backend (for example, 192.168.1.42).
-
-Open the app on your phone, go to the /settings/backend-url route and set the backend-url to the LAN IP you found above. The listening port is 3000
-
-Alternatively, connect your phone with your backend machine (USB debugging has to be enabled) and execute 
-
-```sh
-flutter run -d <device-id> --dart-define=BACKEND_URL=http://<LAN IP>:3000
-```
-
-This will install the app on your phone and set the correct url value for the backend.
-
-To run the backend and frontend on the same device, go to /frontend and execute
-
-```sh
-flutter run -d web-server
-```
-
-The app will automatically connect to the backend on localhost:3000
-
-## 4. Connecting with Ollama
-
-The backend-device requires the installation of [Ollama](https://ollama.com/) and Microsoft's phi4-mini. Install Ollama and execute  
+Install Ollama (https://ollama.com/download), then execute 
 
 ```sh
 ollama run phi4-mini
 ```
+in a terminal to download a local model. While Ollama is running, the backend will automatically connect to the model. Ollama and the backend must run on the same device.
 
-No additional steps are required. The backend will automatically use phi4-mini while Ollama is running.
+## 4. Connect to backend
+
+If the client is running on another decive than the backend, find the local IPv4 address of the backend device, e.g. 192.168.0.81. 
+
+Open the frontend, go to the /settings/backend-url route and set the backend-url to the LAN IP you found above. The listening port is 3000.
