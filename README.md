@@ -4,6 +4,8 @@ This app is a project by a student. Flaws are to be expected.
 
 The app requires a backend running on the same device or in the same local network as the frontend device. Those instructions assume the user uses an Android phone.
 
+Test usernames are "lily", "angel", "elise", "trish" and "sky". The password always is "123".
+
 ## 1. Creating the app
 
 To run it on web, go to /frontend and execute
