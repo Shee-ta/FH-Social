@@ -11,14 +11,13 @@ To run it on web, go to /frontend and execute
 ```sh
 flutter run -d web-server --release
 ```
-then open the open when the project finished building.
 
 For Android, execute 
 
 ```sh
 flutter build apk --release
 ```
-in /frontend. This will build an apk-file in build/app/outputs/flutter-apk/app-release.apk. Move the file to your phone and open it to install the app. 
+This will build an apk-file in build/app/outputs/flutter-apk/app-release.apk. Move the file to your phone and open it to install the app. 
 
 ## 2. Backend setup
 
